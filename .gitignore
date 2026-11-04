@@ -1,0 +1,61 @@
+# Dependencies
+/node_modules
+/.pnpm-store
+
+# Next.js build output
+/.next/
+/out/
+
+# Production build
+/build
+/dist
+
+# Environment variables (strict: jangan pernah commit .env dengan rahasia)
+.env
+.env*.local
+!.env.example
+
+# Database & migrations
+*.db
+*.db-journal
+*.sqlite
+*.sqlite-journal
+/prisma/*.db
+/prisma/*.sqlite
+dump.sql
+*.sql.gz
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Testing & Coverage
+/coverage
+/playwright-report
+/test-results
+/blob-report
+/playwright/.cache
+
+# Uploads and temporary files
+/uploads
+/public/uploads
+/tmp
+/temp
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# TypeScript cache
+*.tsbuildinfo
+next-env.d.ts
