@@ -95,13 +95,13 @@ flowchart TD
 
 ### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Belum Dimulai)
 
-- **Tujuan**: Mengimplementasikan seluruh berkas orkestrasi Docker untuk lingkungan pengembangan (dev) dan produksi (prod) sesuai spesifikasi ADR-008 dan `docs/11-migration-plan.md`.
+- **Tujuan**: Mengimplementasikan seluruh berkas orkestrasi Docker untuk lingkungan pengembangan (dev) dan produksi (prod) sesuai spesifikasi ADR-008, ADR-009, `docs/database/11-migration-plan.md`, dan `docs/database/14-traceability.md`.
 - **Ruang Lingkup**:
   - [ ] Implementasi berkas `docker-compose.yml` untuk development (hot reload Next.js, port postgres dev terikat 127.0.0.1).
   - [ ] Implementasi berkas `docker-compose.prod.yml` untuk produksi (internal bridge network `yayasan_internal`, port DB & app tertutup dari host, resource limits).
-  - [ ] Konfigurasi container `reverse-proxy` (Caddy dengan otomatisasi TLS Let's Encrypt / ZeroSSL dan security headers).
-  - [ ] Konfigurasi container `migrate` sekali jalan (`prisma migrate deploy`).
-  - [ ] Konfigurasi container `backup-worker` (dengan client PostgreSQL 17, skrip backup otomatis, validasi versi, dan kredensial least privilege).
+  - [ ] Konfigurasi container `reverse-proxy` (Caddy resmi ditetapkan dengan otomatisasi TLS Let's Encrypt / ZeroSSL dan security headers).
+  - [ ] Konfigurasi container `migrate` sekali jalan (`prisma migrate deploy` dengan resolusi failure `prisma migrate resolve`).
+  - [ ] Konfigurasi container `backup-worker` (dengan client PostgreSQL 17, skrip backup terjadwal lokal dan offsite S3 wajib, validasi versi manifest, dan kredensial least privilege).
   - [ ] Konfigurasi multi-stage `Dockerfile` dengan dukungan multi-arsitektur (`linux/amd64` dan `linux/arm64`).
   - [ ] Uji coba simulasi pemindahan mesin (_cross-machine transfer drill_) dari lokal ke container staging.
 - **Checklist Keamanan Fase 0.7**:

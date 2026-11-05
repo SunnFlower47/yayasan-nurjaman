@@ -182,11 +182,19 @@ Header respons HTTP untuk seluruh rute `/admin/*` dan `/api/*` menyematkan:
 
 ## 7. Perlindungan Data Sensitif & Jejak Audit (_Audit Trail_)
 
-### 7.1 Enkripsi Data Pribadi saat Istirahat (_Encryption at Rest_)
+### 7.1 Enkripsi Data Pribadi saat Istirahat (_Encryption at Rest_) & Konvensi Multi-Kunci
 
 - Kolom basis data yang memuat identitas kependudukan (NIK anggota), nomor rekening bank, dan rahasia TOTP 2FA wajib dienkripsi di level aplikasi sebelum disimpan ke PostgreSQL menggunakan **AES-256-GCM**.
-- Kunci enkripsi aplikasi disimpan dalam variabel lingkungan `ENCRYPTION_SECRET` (32 bytes).
-- **Invarian Migrasi Mesin**: Saat memindahkan sistem antar-mesin (VPS $\leftrightarrow$ Laptop), nilai `ENCRYPTION_SECRET` pada `.env` **WAJIB DISALIN PERSIS SAMA**. Tanpa kunci master yang identik, data terenkripsi tidak akan bisa didekripsi selamanya (_permanent data loss_).
+- **Key Ring Enkripsi Aplikasi (`ENCRYPTION_KEY_ACTIVE_ID` & `ENCRYPTION_KEYS`)**:
+  - Format penyimpanan ciphertext: prefix key ID, nonce 12-byte, ciphertext terenkripsi, dan tag autentikasi 16-byte.
+  - Mendukung rotasi: `ENCRYPTION_KEY_ACTIVE_ID` untuk enkripsi data baru, dan seluruh daftar kunci historis dalam `ENCRYPTION_KEYS` untuk mendekripsi data lama.
+- **Kunci Blind Index Terpisah (`BLIND_INDEX_SECRET`)**:
+  - Kolom pencarian rahasia seperti `nik_blind_index` dihasilkan menggunakan HMAC-SHA256 dengan kunci rahasia `BLIND_INDEX_SECRET` terpisah dari kunci enkripsi AES.
+- **Invarian Mutlak Migrasi Mesin (VPS $\leftrightarrow$ Laptop)**:
+  - Saat memindahkan sistem antar-mesin, **SELURUH KUNCI KRIPTOGRAFI** (`ENCRYPTION_KEY_ACTIVE_ID`, seluruh kamus `ENCRYPTION_KEYS`, dan `BLIND_INDEX_SECRET`) pada `.env` **WAJIB DISALIN PERSIS SAMA SECARA LENGKAP**.
+  - **Bahaya Fatal**:
+    1. Kehilangan kunci enkripsi: data sensitif terenkripsi **TIDAK BISA DIBACA SELAMANYA (_PERMANENT DATA LOSS_)**.
+    2. Kehilangan / perubahan kunci blind index: pencarian anggota via NIK dan deteksi integritas keunikan duplikasi data anggota akan rusak total (_search failure & duplicate integrity breach_).
 
 ### 7.2 Penyamaran Data Antarmuka (_Data Masking_)
 

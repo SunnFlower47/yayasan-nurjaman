@@ -48,7 +48,10 @@ d:\PROJECT\yayasan-nurjaman/
 │   ├── SECURITY.md          # Standar keamanan OWASP ASVS L2
 │   ├── UI-UX-RULES.md       # Desain kelembagaan & komponen bersama
 │   ├── ARCHITECTURE.md      # Spesifikasi arsitektur teknis & ADR
-│   └── 11-migration-plan.md # Panduan migrasi database & pindah mesin Docker
+│   ├── DATABASE-SCHEMA.md   # Spesifikasi teknis struktur 70 tabel basis data
+│   └── database/            # Panduan teknis & matriks keterlacakan basis data
+│       ├── 11-migration-plan.md  # Panduan migrasi database & pindah mesin Docker
+│       └── 14-traceability.md    # Matriks keterlacakan regulasi & validasi restore
 ├── prisma/                  # Skema database & file migrasi
 │   └── schema.prisma
 ├── public/                  # Aset statis publik
@@ -201,13 +204,13 @@ Sistem dirancang dengan pendekatan **Docker-First**: seluruh subsistem aplikasi,
 
 ### 6.1 Topologi Layanan (_Service Catalog_)
 
-| Layanan             | Peran & Tanggung Jawab                                 | Mode Eksekusi                                       | Paparan Port ke Host                    |
-| :------------------ | :----------------------------------------------------- | :-------------------------------------------------- | :-------------------------------------- |
-| **`app`**           | Aplikasi Next.js App Router (SSR, API, Server Actions) | Daemon (`restart: unless-stopped`)                  | **TIDAK ADA** (Hanya jaringan internal) |
-| **`postgres`**      | Database PostgreSQL 17 Alpine                          | Daemon (`restart: unless-stopped`)                  | **TIDAK ADA** (Hanya jaringan internal) |
-| **`reverse-proxy`** | Caddy / Nginx dengan TLS otomatis & SSL offloading     | Daemon (`restart: unless-stopped`)                  | **Port 80 (HTTP) & 443 (HTTPS)**        |
-| **`migrate`**       | Eksekusi `prisma migrate deploy` sebelum deploy app    | Sekali jalan (_ephemeral one-off_, `restart: "no"`) | **TIDAK ADA** (Hanya jaringan internal) |
-| **`backup-worker`** | Worker cadangan terjadwal & drill pemulihan data       | Daemon berkala (`restart: unless-stopped`)          | **TIDAK ADA** (Hanya jaringan internal) |
+| Layanan             | Peran & Tanggung Jawab                                               | Mode Eksekusi                                       | Paparan Port ke Host                    |
+| :------------------ | :------------------------------------------------------------------- | :-------------------------------------------------- | :-------------------------------------- |
+| **`app`**           | Aplikasi Next.js App Router (SSR, API, Server Actions)               | Daemon (`restart: unless-stopped`)                  | **TIDAK ADA** (Hanya jaringan internal) |
+| **`postgres`**      | Database PostgreSQL 17 Alpine                                        | Daemon (`restart: unless-stopped`)                  | **TIDAK ADA** (Hanya jaringan internal) |
+| **`reverse-proxy`** | Caddy dengan TLS otomatis Let's Encrypt / ZeroSSL (Resmi Ditetapkan) | Daemon (`restart: unless-stopped`)                  | **Port 80 (HTTP) & 443 (HTTPS)**        |
+| **`migrate`**       | Eksekusi `prisma migrate deploy` sebelum deploy app                  | Sekali jalan (_ephemeral one-off_, `restart: "no"`) | **TIDAK ADA** (Hanya jaringan internal) |
+| **`backup-worker`** | Worker cadangan terjadwal lokal & offsite S3 (Wajib)                 | Daemon berkala (`restart: unless-stopped`)          | **TIDAK ADA** (Hanya jaringan internal) |
 
 ### 6.2 Volume Bernama (_Named Volumes_)
 
@@ -242,10 +245,15 @@ flowchart LR
     end
 ```
 
-### 6.4 Pengelolaan Environment Variables & Rahasia (_Zero Baked Secrets_)
+### 6.4 Pengelolaan Environment Variables, Rahasia & Key Ring Kriptografi (_Zero Baked Secrets_)
 
-1. Kunci rahasia (`DATABASE_URL`, `POSTGRES_PASSWORD`, `ENCRYPTION_SECRET`, `NEXTAUTH_SECRET`) **DILARANG KERAS DIBAKAR** (_never baked_) ke dalam Dockerfile atau image layer.
+1. Kunci rahasia kredensial (`DATABASE_URL`, `POSTGRES_PASSWORD`, `NEXTAUTH_SECRET`), **Key Ring Enkripsi Aplikasi** (`ENCRYPTION_KEY_ACTIVE_ID`, `ENCRYPTION_KEYS`), dan **Kunci Blind Index** (`BLIND_INDEX_SECRET`) **DILARANG KERAS DIBAKAR** (_never baked_) ke dalam Dockerfile atau image layer.
 2. Seluruh rahasia disuntikkan secara dinamis saat runtime melalui environment host terproteksi (berkas `.env` dengan izin berkas ketat `chmod 600`).
+3. **Konvensi Key Ring Multi-Kunci & Blind Index**:
+   - `ENCRYPTION_KEY_ACTIVE_ID` menentukan ID kunci aktif saat ini yang dipakai mengenkripsi data baru (AES-256-GCM).
+   - `ENCRYPTION_KEYS` memuat kamus seluruh pasangan key ID dan kunci enkripsi 32-byte (termasuk kunci lama) untuk menjamin data historis tetap bisa didekripsi saat rotasi kunci.
+   - `BLIND_INDEX_SECRET` adalah kunci HMAC-SHA256 terpisah untuk indexing kolom terenkripsi (`nik_blind_index`) guna pencarian dan validasi keunikan tanpa membongkar ciphertext.
+   - **Invarian Pemindahan Mesin**: SEMUA kunci enkripsi di key ring dan kunci blind index wajib direplikasi identik ke mesin target. Ketiadaan kunci enkripsi menyebabkan kehilangan data permanen (_unreadable ciphertext_); ketiadaan kunci blind index merusak fungsionalitas pencarian dan deteksi duplikat NIK anggota.
 
 ### 6.5 Pemeriksaan Kesehatan (_Healthcheck_) & Versi Image Eksak
 
@@ -261,17 +269,31 @@ Image yang dibangun untuk aplikasi dan worker wajib mendukung arsitektur ganda v
 - `linux/amd64` (Server VPS x86_64 produksi)
 - `linux/arm64` (Laptop Apple Silicon M1/M2/M3 dan laptop ARM pengembang)
 
+### 6.7 Kebijakan Toleransi Restart, Henti Singkat & Pola Migrasi Expand-Contract
+
+1. **Koreksi Realitas: Henti Singkat Terukur (_Brief Interruption_), Bukan Zero-Downtime**:
+   Proses restart container aplikasi Next.js pada arsitektur single-host Docker membutuhkan jeda waktu booting runtime Node.js dan healthcheck (2–5 detik). Selama interval singkat ini terjadi _brief interruption_. Sistem secara sadar menerima kompromi ini demi kesederhanaan arsitektur tanpa kompleksitas cluster Kubernetes/Swarm.
+2. **Pola Evolusi Skema: Expand lalu Contract**:
+   Setiap perubahan skema database wajib kompatibel dengan versi kode aplikasi yang sedang berjalan:
+   - **Expand**: Buat tabel baru atau kolom baru nullable / dengan nilai default.
+   - **Backfill**: Migrasi data lama ke struktur baru jika diperlukan.
+   - **Contract**: Buat migrasi susulan untuk menghapus kolom usang setelah seluruh container menjalankan kode baru.
+3. **Penanganan Kegagalan Migrasi**:
+   - **Jalur Normal**: Memperbaiki migrasi dan menandai status skema via `prisma migrate resolve` (`--applied` atau `--rolled-back`).
+   - **Pilihan Terakhir (_Last Resort_)**: Pemulihan dari snapshot cadangan `PRE_DEPLOY` hanya ditempuh jika terjadi kegagalan DDL destruktif yang tidak dapat diselesaikan secara logis.
+
 ---
 
 ## 7. Catatan Keputusan Arsitektur (Architectural Decision Records / ADR)
 
-| ID ADR      | Tanggal    | Topik Keputusan                           | Pilihan yang Ditetapkan & Alasan Teknis                                                                                                                                                                                                                                                                           |
-| :---------- | :--------- | :---------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ADR-001** | 2026-11-04 | **Arsitektur Aplikasi**                   | **Next.js App Router + Modular Monolith**. Menggabungkan kemudahan pemeliharaan monolit dengan isolasi batas domain yang tegas di `src/modules/`.                                                                                                                                                                 |
-| **ADR-002** | 2026-11-04 | **Manajemen Basis Data**                  | **PostgreSQL + Prisma Migration Only**. Menolak keras `prisma db push` demi jejak migrasi skema yang terlacak dan reproduktif.                                                                                                                                                                                    |
-| **ADR-003** | 2026-11-05 | **Prioritas Roadmap**                     | **Admin Panel Terlebih Dahulu, Situs Publik Terakhir**. Membangun fondasi internal, data anggota, keuangan ISAK 35, proyek, dan CMS sebelum membuka wajah publik.                                                                                                                                                 |
-| **ADR-004** | 2026-11-05 | **Model Otorisasi Aman**                  | **Defense in Depth Server-Side Authorization**. Middleware hanya untuk redirect; pengecekan izin mutlak dilakukan di Server Action (`requirePermission`) guna menangkal potensi middleware route bypass.                                                                                                          |
-| **ADR-005** | 2026-11-04 | **Presisi Finansial**                     | **BigInt / Decimal Integer Rupiah**. Dilarang menggunakan tipe float. Invarian debit = kredit diverifikasi sebelum transaksi ditulis ke basis data.                                                                                                                                                               |
-| **ADR-006** | 2026-11-04 | **Konfigurasi Tarif Pajak**               | **Master Data Berversi Tanggal Efektif**. Tarif pajak (PPh 21, 23, Final) tidak di-hardcode di kode, melainkan dibaca dinamis dari tabel berversi tanggal.                                                                                                                                                        |
-| **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**                 | **Nonce-based CSP & Strict HTTP Headers**. Menerapkan CSP dengan nonce per request, HSTS 2 tahun, X-Frame-Options: DENY, dan X-Robots-Tag noindex untuk rute admin/API.                                                                                                                                           |
-| **ADR-008** | 2026-11-05 | **Ekosistem Docker-First & Portabilitas** | **Docker Compose v2 Multi-Service & Multi-Arch**. Menstandarisasi layanan (`app`, `postgres`, `reverse-proxy`, `migrate`, `backup-worker`) dengan isolasi jaringan internal tanpa port binding ke DB/app guna menangkal UFW bypass di VPS, volume bernama, serta portabilitas total laptop $\leftrightarrow$ VPS. |
+| ID ADR      | Tanggal    | Topik Keputusan                                                      | Pilihan yang Ditetapkan & Alasan Teknis                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| :---------- | :--------- | :------------------------------------------------------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ADR-001** | 2026-11-04 | **Arsitektur Aplikasi**                                              | **Next.js App Router + Modular Monolith**. Menggabungkan kemudahan pemeliharaan monolit dengan isolasi batas domain yang tegas di `src/modules/`.                                                                                                                                                                                                                                                                                                                                        |
+| **ADR-002** | 2026-11-04 | **Manajemen Basis Data**                                             | **PostgreSQL + Prisma Migration Only**. Menolak keras `prisma db push` demi jejak migrasi skema yang terlacak dan reproduktif.                                                                                                                                                                                                                                                                                                                                                           |
+| **ADR-003** | 2026-11-05 | **Prioritas Roadmap**                                                | **Admin Panel Terlebih Dahulu, Situs Publik Terakhir**. Membangun fondasi internal, data anggota, keuangan ISAK 35, proyek, dan CMS sebelum membuka wajah publik.                                                                                                                                                                                                                                                                                                                        |
+| **ADR-004** | 2026-11-05 | **Model Otorisasi Aman**                                             | **Defense in Depth Server-Side Authorization**. Middleware hanya untuk redirect; pengecekan izin mutlak dilakukan di Server Action (`requirePermission`) guna menangkal potensi middleware route bypass.                                                                                                                                                                                                                                                                                 |
+| **ADR-005** | 2026-11-04 | **Presisi Finansial**                                                | **BigInt / Decimal Integer Rupiah**. Dilarang menggunakan tipe float. Invarian debit = kredit diverifikasi sebelum transaksi ditulis ke basis data.                                                                                                                                                                                                                                                                                                                                      |
+| **ADR-006** | 2026-11-04 | **Konfigurasi Tarif Pajak**                                          | **Master Data Berversi Tanggal Efektif**. Tarif pajak (PPh 21, 23, Final) tidak di-hardcode di kode, melainkan dibaca dinamis dari tabel berversi tanggal.                                                                                                                                                                                                                                                                                                                               |
+| **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**                                            | **Nonce-based CSP & Strict HTTP Headers**. Menerapkan CSP dengan nonce per request, HSTS 2 tahun, X-Frame-Options: DENY, dan X-Robots-Tag noindex untuk rute admin/API.                                                                                                                                                                                                                                                                                                                  |
+| **ADR-008** | 2026-11-05 | **Ekosistem Docker-First & Portabilitas**                            | **Docker Compose v2 Multi-Service & Multi-Arch**. Menstandarisasi layanan (`app`, `postgres`, `reverse-proxy`, `migrate`, `backup-worker`) dengan isolasi jaringan internal tanpa port binding ke DB/app guna menangkal UFW bypass di VPS, volume bernama, serta portabilitas total laptop $\leftrightarrow$ VPS.                                                                                                                                                                        |
+| **ADR-009** | 2026-11-05 | **Manajemen Kriptografi Multi-Kunci & Pola Migrasi Expand-Contract** | **Key Ring + Key ID, Blind Index HMAC Terpisah, dan Strategi Migrasi Expand-Contract**. Seluruh kunci kriptografi wajib direplikasi saat pemindahan mesin. Restart aplikasi diakui memiliki henti singkat terukur (bukan zero-downtime), migrasi skema wajib non-breaking (expand-contract), kegagalan ditangani dengan `prisma migrate resolve` (snapshot restore sebagai pilihan terakhir), cadangan offsite berbasis S3 diwajibkan, dan Caddy ditetapkan sebagai reverse proxy resmi. |
