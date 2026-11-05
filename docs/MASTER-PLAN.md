@@ -71,7 +71,7 @@ Inisialisasi Next.js 15, TypeScript strict, Tailwind, ESLint, Prettier, Husky, t
 Audit Fase 0, `CODE-STANDARDS.md`, `SECURITY.md`, AST linter check-layers, scan-secrets hook, CSP nonce, dan Playwright E2E headers test (`0002`-`0006`).
 👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-05-memperketat-aturan-standar-kode--fondasi-keamanan-status-selesai)_
 
-### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Selesai)
+### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Berjalan)
 
 Spesifikasi 70 tabel 8 modul, ADR-008 s.d. ADR-013, 11-migration-plan (expand-contract), 12-reporting-queries, 13-scenarios, 14-traceability, 15-diff-vs-draf, 99-open-questions, DDL invariant verification (`0007`-`0012`).
 👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-06-desain-basis-data--arsitektur-docker-first-status-selesai)_
@@ -139,7 +139,7 @@ Simulated grey-box pentest, rekonsiliasi audit akuntan yayasan, deployment VPS C
 | :----------- | :------------------------------------------------------- | :------------ | :------------------------------------------------------------------ | :----------------------------- |
 | **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens            | **Selesai**   | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0001]`                   |
 | **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan      | **Selesai**   | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0002]` s.d. `[ID: 0006]` |
-| **Fase 0.6** | Desain Basis Data & Arsitektur Docker-First              | **Selesai**   | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` s.d. `[ID: 0012]` |
+| **Fase 0.6** | Desain Basis Data & Arsitektur Docker-First              | **Berjalan**  | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` s.d. `[ID: 0012]` |
 | **Fase 0.7** | Stack Docker Lengkap (Dev dan Prod)                      | Belum Dimulai | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` (Desain)          |
 | **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout Admin & Audit Log | Belum Dimulai | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
 | **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User         | Belum Dimulai | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |

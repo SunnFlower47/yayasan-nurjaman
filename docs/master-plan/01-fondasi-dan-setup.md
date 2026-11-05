@@ -39,7 +39,7 @@ Dokumen ini memuat spesifikasi teknis lengkap, ruang lingkup, checklist keamanan
 
 ---
 
-### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Selesai)
+### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Berjalan)
 
 - **Tujuan**: Menetapkan spesifikasi teknis lengkap 70 tabel basis data dalam 8 modul domain, rekonsiliasi draf pemilik, matriks keterlacakan, konvensi, ERD, dan arsitektur pendukung tanpa membuat skema Prisma.
 - **Ruang Lingkup Selesai**:
