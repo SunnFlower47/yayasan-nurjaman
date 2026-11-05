@@ -1,12 +1,27 @@
 # Modul 5 — Proyek dan Kegiatan (Fase 5)
 
-_Bagian dari [Spesifikasi Database](./00-README.md) · 7 tabel (5 inti + 2 opsional)_
+_Bagian dari [Spesifikasi Database](./00-README.md) · 7 tabel (5 inti + 2 opsional) · Sasaran: Fase 5 MASTER-PLAN_
 
-> Keterkaitan transaksi dan jurnal ke proyek melalui kolom `project_id` pada `financial_transactions` dan `journal_lines`, sehingga laporan realisasi proyek menggunakan agregasi kueri terstruktur.
+## 1. Tujuan & Sasaran Modul
+
+Modul ini mengelola inisiatif program kerja yayasan di Purwakarta, tahapan termin kerja (_milestones_), laporan kabar progres, dokumentasi berkas kegiatan, alokasi sumber dana terikat, dan kepanitiaan anggota relawan.
+
+```mermaid
+erDiagram
+    PROJECTS ||--o| PROJECT_TYPES : "classified_as"
+    PROJECTS ||--o{ PROJECT_MILESTONES : "tracks"
+    PROJECTS ||--o{ PROJECT_UPDATES : "reports"
+    PROJECTS ||--o{ PROJECT_FILES : "attaches"
+    PROJECTS ||--o{ PROJECT_FUNDING_SOURCES : "funded_by"
+    PROJECTS ||--o{ PROJECT_MEMBERS : "organized_by"
+    PROJECTS ||--o| MEMBERS : "pic"
+```
 
 ---
 
-## project_types
+## 2. Kamus Tabel
+
+### project_types
 
 | Kolom       | Tipe    | Null  | Keterangan                                              |
 | :---------- | :------ | :---- | :------------------------------------------------------ |
@@ -81,7 +96,7 @@ _Catatan: SD, v._
 
 ---
 
-## project*funding_sources *(Opsional)\_
+### project_funding_sources (Opsional)
 
 | Kolom                | Tipe   | Null  | Keterangan                          |
 | :------------------- | :----- | :---- | :---------------------------------- |
@@ -94,7 +109,7 @@ _Catatan: UQ (project_id, restricted_fund_id)._
 
 ---
 
-## project*members *(Opsional)\_
+### project_members (Opsional)
 
 | Kolom        | Tipe | Null  | Keterangan                            |
 | :----------- | :--- | :---- | :------------------------------------ |
@@ -103,6 +118,21 @@ _Catatan: UQ (project_id, restricted_fund_id)._
 | `role_text`  | text | Tidak | Peran spesifik dalam panitia kegiatan |
 
 _Catatan: UQ (project_id, member_id)._
+
+---
+
+## 3. Aturan Database vs Aplikasi & Siklus Hidup Data
+
+1. **Aturan Database**:
+   - `ON DELETE CASCADE` diterapkan pada relasi komposisi milik proyek: `project_milestones`, `project_updates`, `project_files`, `project_funding_sources`, `project_members`.
+   - Batasan tanggal: `CHECK (end_date >= start_date)`.
+   - Keunikan: `slug` unik parsial untuk proyek yang belum dihapus (`deleted_at IS NULL`).
+2. **Aturan Aplikasi**:
+   - Realisasi biaya proyek tidak disimpan statis; dihitung runtime dari agregasi `journal_lines WHERE project_id = ...`.
+   - Publikasi ke situs portal publik (`is_public = true`) memicu pembentukan rute publik `/program/[slug]`.
+3. **Siklus Hidup Data**:
+   - Pembatalan atau penutupan proyek beralih status ke `COMPLETED` atau `CANCELLED`.
+   - Proyek yang telah memiliki jurnal pembukuan tidak boleh dihapus fisik (hanya soft delete).
 
 ---
 

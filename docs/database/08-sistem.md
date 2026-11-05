@@ -1,8 +1,22 @@
 # Modul 8 — Sistem dan Cadangan Data (Fase 8)
 
-_Bagian dari [Spesifikasi Database](./00-README.md) · 5 tabel_
+_Bagian dari [Spesifikasi Database](./00-README.md) · 5 tabel · Sasaran: Fase 8 MASTER-PLAN_
+
+## 1. Tujuan & Sasaran Modul
+
+Modul ini mengelola orkestrasi pencadangan otomatis (lokal dan offsite S3), riwayat pemulihan (_restore_), validasi versi lingkungan pra-restore, penguncian tugas terjadwal (_distributed job locks_), dan token unduhan berkas berumur pendek.
+
+```mermaid
+erDiagram
+    BACKUP_SCHEDULES ||--o{ BACKUP_JOBS : "triggers"
+    BACKUP_JOBS ||--o{ RESTORE_EVENTS : "restored_file"
+    BACKUP_JOBS ||--o{ RESTORE_EVENTS : "pre_restore_snapshot"
+    BACKUP_JOBS ||--o{ DOWNLOAD_TOKENS : "download_link"
+```
 
 ---
+
+## 2. Kamus Tabel
 
 ### backup_schedules
 
@@ -23,30 +37,35 @@ _Bagian dari [Spesifikasi Database](./00-README.md) · 5 tabel_
 
 Model data cadangan yang dilengkapi pencatatan versi lingkungan guna validasi kompatibilitas pemulihan data sebelum dieksekusi.
 
-| Kolom              | Tipe        | Null  | Keterangan                                                                  |
-| :----------------- | :---------- | :---- | :-------------------------------------------------------------------------- |
-| `trigger`          | enum        | Tidak | MANUAL, SCHEDULED, PRE_RESTORE, PRE_DEPLOY                                  |
-| `kind`             | enum        | Tidak | DB_ONLY, DB_AND_FILES                                                       |
-| `status`           | enum        | Tidak | RUNNING, SUCCESS, FAILED                                                    |
-| `started_at`       | timestamptz | Tidak | Waktu mulai proses                                                          |
-| `finished_at`      | timestamptz | Ya    | Waktu selesai proses                                                        |
-| `postgres_version` | text        | Tidak | Versi PostgreSQL saat backup dibuat (misal: "17.2")                         |
-| `schema_version`   | text        | Tidak | Nama migrasi Prisma terakhir yang aktif (misal: "20261105000000_init_auth") |
-| `app_version`      | text        | Tidak | Versi rilis aplikasi atau Git commit SHA (misal: "0.1.0-e825d51")           |
-| `storage_key`      | text        | Ya    | Lokasi path berkas cadangan                                                 |
-| `size_bytes`       | bigint      | Ya    | Ukuran arsip cadangan                                                       |
-| `sha256`           | text        | Ya    | Hash integritas berkas                                                      |
-| `encrypted`        | boolean     | Tidak | Status enkripsi arsip                                                       |
-| `key_id`           | text        | Ya    | ID kunci enkripsi yang dipakai                                              |
-| `destination`      | enum        | Tidak | LOCAL, S3                                                                   |
-| `schedule_id`      | uuid        | Ya    | FK → backup_schedules                                                       |
-| `requested_by`     | uuid        | Ya    | FK → users                                                                  |
-| `error_message`    | text        | Ya    | Pesan galat tersanitasi jika gagal                                          |
+| Kolom                 | Tipe        | Null  | Keterangan                                                 |
+| :-------------------- | :---------- | :---- | :--------------------------------------------------------- |
+| `trigger`             | enum        | Tidak | MANUAL, SCHEDULED, PRE_RESTORE, PRE_DEPLOY                 |
+| `kind`                | enum        | Tidak | DB_ONLY, DB_AND_FILES                                      |
+| `status`              | enum        | Tidak | RUNNING, SUCCESS, FAILED                                   |
+| `started_at`          | timestamptz | Tidak | Waktu mulai proses                                         |
+| `finished_at`         | timestamptz | Ya    | Waktu selesai proses                                       |
+| `postgres_version`    | text        | Tidak | Versi PostgreSQL saat backup dibuat (disahkan pemilik)     |
+| `schema_version`      | text        | Tidak | Nama migrasi Prisma terakhir yang aktif (disahkan pemilik) |
+| `app_version`         | text        | Tidak | Versi rilis atau Git commit SHA (disahkan pemilik)         |
+| `storage_key`         | text        | Ya    | Lokasi path berkas cadangan lokal (bukan URL)              |
+| `size_bytes`          | bigint      | Ya    | Ukuran arsip cadangan lokal                                |
+| `sha256`              | text        | Ya    | Hash integritas berkas cadangan                            |
+| `encrypted`           | boolean     | Tidak | Status enkripsi arsip                                      |
+| `key_id`              | text        | Ya    | ID kunci enkripsi yang dipakai                             |
+| `destination`         | enum        | Tidak | LOCAL, S3                                                  |
+| `offsite_status`      | enum        | Tidak | `NONE, PENDING, SUCCESS, FAILED`. Default `NONE`           |
+| `offsite_storage_key` | text        | Ya    | Lokasi path objek pada penyimpanan offsite S3              |
+| `offsite_copied_at`   | timestamptz | Ya    | Waktu berhasil direplikasi ke offsite                      |
+| `schedule_id`         | uuid        | Ya    | FK → backup_schedules                                      |
+| `requested_by`        | uuid        | Ya    | FK → users                                                 |
+| `error_message`       | text        | Ya    | Pesan galat tersanitasi jika gagal                         |
 
-_Catatan kolom tambahan arsitektur:_
+_Catatan Arsitektur & Aturan Siklus Hidup Cadangan:_
 
-- _`postgres_version`, `schema_version`, `app_version`: **[Ditambah arsitektur — lihat ADR-009]**. Tidak ada di draf pemilik. Ditambahkan untuk mendukung validasi kompatibilitas restore (lihat `docs/database/14-traceability.md`). **PERLU KONFIRMASI** pemilik apakah kolom ini disetujui._
-- _Nilai `PRE_DEPLOY` pada `trigger`: **[Ditambah arsitektur — lihat ADR-009]**. Draf pemilik hanya memuat MANUAL, SCHEDULED, PRE_RESTORE. `PRE_DEPLOY` ditambahkan untuk backup otomatis sebelum deploy. **PERLU KONFIRMASI** pemilik._
+- _Status 4 Kolom Tambahan: `postgres_version`, `schema_version`, `app_version`, dan nilai enum `PRE_DEPLOY` pada `trigger` **RESMI DISETUJUI PEMILIK** (ADR-009)._
+- _Pemisahan Salinan Lokal & Offsite: Sistem membedakan salinan lokal (`storage_key`) dan salinan offsite (`offsite_storage_key`). Admin panel memunculkan peringatan (warning banner) untuk backup berstatus lokal `SUCCESS` namun `offsite_status != SUCCESS`._
+- _Kunci Enkripsi Cadangan: Kunci enkripsi backup **DILARANG KERAS DISIMPAN DI VPS MAUPUN DATABASE**. Kunci master enkripsi disimpan offline/cold storage atau dipasok manual oleh operator saat prosedur pemulihan._
+- _Siklus Hidup Penyimpanan & Media: Soft delete media tidak menghapus file fisik di disk (perlu background cleanup job). Lampiran transaksi keuangan (`transaction_attachments`) dilarang dihapus. Berkas `PRIVATE` tidak pernah memiliki URL publik langsung._
 
 ---
 
@@ -95,6 +114,21 @@ Tautan unduh berumur pendek untuk file cadangan atau ekspor sensitif.
 | `created_by`     | uuid        | Tidak | FK → users        |
 
 _Catatan: CHECK tepat salah satu dari backup_job_id atau media_asset_id yang terisi._
+
+---
+
+## 3. Aturan Database vs Aplikasi & Siklus Hidup Data
+
+1. **Aturan Database**:
+   - `job_locks`: Mencegah eksekusi ganda job terjadwal menggunakan `job_name` sebagai Primary Key dan sewa waktu `locked_until`.
+   - `download_tokens`: Token bersifat sekali pakai (`used_at`) dan berumur pendek (`expires_at`), disimpan sebagai hash SHA-256 (`token_hash`).
+2. **Aturan Aplikasi**:
+   - Validasi Pra-Pemulihan (Pre-Restore Drill): Aplikasi menolak mutlak pemulihan jika versi PostgreSQL target lebih tua daripada `postgres_version`, atau skema tidak kompatibel dengan `schema_version`.
+   - Snapshot Otomatis: Restorasi mewajibkan pembuatan snapshot `pre_restore_backup_id` terlebih dahulu sebelum database target ditimpa.
+   - Peringatan Offsite: Worker memicu alert kepada admin jika backup lokal sukses namun `offsite_status != SUCCESS`.
+3. **Siklus Hidup Data**:
+   - Berkas cadangan lokal dibersihkan sesuai kuota retensi (`retention_count` dan `retention_days`).
+   - Kunci enkripsi arsip backup tidak disimpan di VPS maupun database; disimpan di cold storage operator.
 
 ---
 

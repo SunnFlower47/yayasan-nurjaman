@@ -194,12 +194,12 @@ Perbandingan dilakukan tabel demi tabel, kolom demi kolom, dengan membaca kedua 
 
 **Detail penyimpangan `backup_jobs`**:
 
-| Item               | Di Draf                        | Di DATABASE-SCHEMA.md                          | Status                  | Alasan / Dampak                                                                                                          |
-| :----------------- | :----------------------------- | :--------------------------------------------- | :---------------------- | :----------------------------------------------------------------------------------------------------------------------- |
-| `trigger` enum     | MANUAL, SCHEDULED, PRE_RESTORE | MANUAL, SCHEDULED, PRE_RESTORE, **PRE_DEPLOY** | **Ditambah arsitektur** | `PRE_DEPLOY` ditambahkan untuk backup otomatis sebelum deploy. Lihat ADR-009. **PERLU KONFIRMASI pemilik.**              |
-| `postgres_version` | Tidak ada                      | ✓ (ada)                                        | **Ditambah arsitektur** | Mencatat versi PostgreSQL saat backup untuk validasi restore. Lihat ADR-009. **PERLU KONFIRMASI pemilik.**               |
-| `schema_version`   | Tidak ada                      | ✓ (ada)                                        | **Ditambah arsitektur** | Mencatat nama migrasi Prisma terakhir untuk validasi kompatibilitas schema. Lihat ADR-009. **PERLU KONFIRMASI pemilik.** |
-| `app_version`      | Tidak ada                      | ✓ (ada)                                        | **Ditambah arsitektur** | Mencatat versi rilis atau git SHA untuk korelasi restore. Lihat ADR-009. **PERLU KONFIRMASI pemilik.**                   |
+| Item               | Di Draf                        | Di DATABASE-SCHEMA.md                          | Status                          | Alasan / Dampak                                                                       |
+| :----------------- | :----------------------------- | :--------------------------------------------- | :------------------------------ | :------------------------------------------------------------------------------------ |
+| `trigger` enum     | MANUAL, SCHEDULED, PRE_RESTORE | MANUAL, SCHEDULED, PRE_RESTORE, **PRE_DEPLOY** | **Ditambah, DISETUJUI PEMILIK** | Ditambahkan untuk backup otomatis sebelum deploy (ADR-009). Disahkan pemilik.         |
+| `postgres_version` | Tidak ada                      | ✓ (ada)                                        | **Ditambah, DISETUJUI PEMILIK** | Validasi kompatibilitas versi PostgreSQL sebelum restore (ADR-009). Disahkan pemilik. |
+| `schema_version`   | Tidak ada                      | ✓ (ada)                                        | **Ditambah, DISETUJUI PEMILIK** | Validasi kompatibilitas skema migrasi sebelum restore (ADR-009). Disahkan pemilik.    |
+| `app_version`      | Tidak ada                      | ✓ (ada)                                        | **Ditambah, DISETUJUI PEMILIK** | Jejak versi rilis/commit aplikasi untuk korelasi restore (ADR-009). Disahkan pemilik. |
 
 ---
 
@@ -211,8 +211,8 @@ Perbandingan dilakukan tabel demi tabel, kolom demi kolom, dengan membaca kedua 
 
 ---
 
-## Kesimpulan dan Tindakan yang Diperlukan
+## Kesimpulan dan Status Akhir
 
-1. **Konfirmasi 4 kolom tambahan di `backup_jobs`** — `postgres_version`, `schema_version`, `app_version`, dan nilai enum `PRE_DEPLOY` pada `trigger` adalah tambahan arsitektur yang belum ada di draf pemilik. Jika pemilik menyetujui, tambahkan ke draf resmi. Jika tidak, hapus dari desain.
-2. **Semua tabel dan kolom draf sudah ada** — tidak ada yang hilang dari desain saat ini.
-3. **Usulan tabel di luar 70 tabel** (`legal_documents`, `letterheads`, `media_tags`, `media_asset_tags`, `member_id_cards`, `bank_reconciliations`, `recurring_transactions`, `asset_inventories`, `depreciation_schedules`, `closing_entries`, `tax_invoices`) sudah dipindah ke bagian "Usulan Tambahan, MENUNGGU PERSETUJUAN" di file modul masing-masing.
+1. **4 Penambahan pada `backup_jobs` Resmi Disetujui**: `postgres_version`, `schema_version`, `app_version`, dan nilai enum `PRE_DEPLOY` pada kolom `trigger` telah disetujui pemilik dan masuk ke draf resmi.
+2. **Semua 70 Tabel Draf Pemilik Hadir Utuh**: Tidak ada tabel atau kolom draf yang hilang atau diubah tanpa persetujuan.
+3. **Pemisahan Usulan Tambahan**: Seluruh tabel di luar draf dialokasikan ke bagian "Usulan Tambahan, MENUNGGU PERSETUJUAN" di modul masing-masing.

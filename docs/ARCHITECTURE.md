@@ -35,59 +35,28 @@ Sistem menggunakan pola **Modular Monolith** berbasis domain di dalam `src/modul
 ```text
 d:\PROJECT\yayasan-nurjaman/
 ├── .github/                 # Konfigurasi CI/CD & dependabot
-│   ├── workflows/ci.yml     # Automated build, lint, test & secret scan
-│   └── dependabot.yml       # Weekly dependency check
 ├── .husky/                  # Git hook scripts (changelog, secrets, layers enforcer)
-├── changelogs/              # Catatan riwayat perubahan (append-only)
-│   ├── README.md            # Aturan & template changelog
-│   └── 0001-*.md            # File entri berurutan NNNN
-├── docs/                    # Dokumen aturan, panduan & arsitektur
-│   ├── MASTER-PLAN.md       # Rencana induk sekuensial fase
-│   ├── WORKING-RULES.md     # Aturan kerja & invarian akuntansi
-│   ├── CODE-STANDARDS.md    # Batas ukuran kode & clean code
-│   ├── SECURITY.md          # Standar keamanan OWASP ASVS L2
-│   ├── UI-UX-RULES.md       # Desain kelembagaan & komponen bersama
-│   ├── ARCHITECTURE.md      # Spesifikasi arsitektur teknis & ADR
-│   └── database/            # Spesifikasi 70 tabel basis data & panduan teknis
-│       ├── 00-README.md     # Indeks spesifikasi database & legenda notasi
-│       ├── 11-migration-plan.md  # Panduan migrasi database & portabilitas Docker
-│       ├── 14-traceability.md    # Matriks keterlacakan regulasi & validasi restore
-│       └── 15-diff-vs-draf.md    # Rekonsiliasi draf pemilik vs spesifikasi database
+├── changelogs/              # Catatan riwayat perubahan NNNN (append-only)
+├── docs/                    # Dokumen aturan, panduan & arsitektur (MASTER-PLAN, SECURITY, dll.)
+│   └── database/            # Spesifikasi modular basis data (00 s.d. 15)
 ├── prisma/                  # Skema database & file migrasi
-│   └── schema.prisma
-├── public/                  # Aset statis publik
-│   └── brand/               # Logo resmi & favicon yayasan
-├── scripts/                 # Skrip utilitas CLI
-│   ├── check-changelog.mjs  # Enforcer entri changelog di git pre-commit
-│   ├── check-layers.mjs     # Enforcer batas arsitektur berlapis
-│   ├── new-changelog.mjs    # Generator template changelog baru
-│   └── scan-secrets.mjs     # Pemindai kunci rahasia & kredensial bocor
+├── public/                  # Aset statis publik (brand, favicon)
+├── scripts/                 # Skrip utilitas CLI (check-layers, scan-secrets, dll.)
 ├── src/
-│   ├── app/                 # Next.js App Router (Routing, Layout & Page)
-│   │   ├── (public)/        # Rute situs publik (Fase 9)
-│   │   ├── (admin)/admin/   # Rute panel admin internal (Fase 1 s.d. 8)
-│   │   ├── api/health/      # Route kesehatan sistem & koneksi database
-│   │   ├── dev/tokens/      # Pratinjau design tokens (dev-only, 404 di prod)
-│   │   └── robots.ts        # Dynamic robots.txt (disallow admin & api)
-│   ├── components/          # Komponen Antarmuka Bersama
-│   │   ├── ui/              # Komponen atomik/primitif (Button, Input, Badge, Dialog)
-│   │   ├── shared/          # Komponen komposit (DataTable, PageHeader, MoneyInput)
-│   │   └── layout/          # Kerangka tata letak (AdminShell, Header, Sidebar)
-│   ├── modules/             # Modular Domain Packages
-│   │   ├── auth/            # Autentikasi, 2FA, sesi, akun pengurus
-│   │   ├── members/         # Manajemen anggota, pengurus, relawan & data masking
-│   │   ├── finance/         # Inti akuntansi: COA, Jurnal Umum, Buku Kas, ISAK 35
-│   │   ├── projects/        # Proyek/kegiatan sosial dan pagu anggaran
-│   │   ├── tax/             # Konfigurasi tarif pajak dinamis & bukti potong
-│   │   ├── content/         # CMS profil yayasan, berita, artikel & galeri
-│   │   ├── settings/        # Pengaturan umum yayasan, preferensi sistem
-│   │   ├── audit/           # Service & viewer jejak audit aktivitas (audit trail)
-│   │   └── backup/          # Utilitas pencadangan dan pemulihan database
+│   ├── app/                 # Next.js App Router ((public)/, (admin)/admin/, api/health/)
+│   ├── components/          # Komponen Antarmuka Bersama (ui/, shared/, layout/)
+│   ├── modules/             # Modular Domain (auth, members, finance, projects, tax, content, settings, audit, backup)
 │   ├── lib/                 # Utilitas lintas modul (env, db, format, errors)
-│   ├── middleware.ts        # Security headers, nonce-based CSP & robots tags
-│   └── styles/              # Design tokens (tokens.css) & Tailwind (globals.css)
-└── tests/                   # Pengujian terstruktur (unit/ & e2e/)
+│   └── styles/              # Design tokens & CSS global
+└── tests/                   # Pengujian terotomatisasi (unit/ & e2e/)
 ```
+
+│ ├── lib/ # Utilitas lintas modul (env, db, format, errors)
+│ ├── middleware.ts # Security headers, nonce-based CSP & robots tags
+│ └── styles/ # Design tokens (tokens.css) & Tailwind (globals.css)
+└── tests/ # Pengujian terstruktur (unit/ & e2e/)
+
+````
 
 ### Tanggung Jawab Lapisan per Modul Domain (`src/modules/<domain>/`)
 
@@ -133,7 +102,7 @@ sequenceDiagram
         Service-->>Action: Respon Sukses / DTO Bertipe
         Action-->>UI: Revalidate Path & Tampilkan Notifikasi Sukses
     end
-```
+````
 
 ---
 
@@ -167,35 +136,9 @@ flowchart TD
 
 ---
 
-## 5. Model Entitas Database Konseptual
+## 5. Model Entitas Basis Data Konseptual
 
-```mermaid
-erDiagram
-    USER ||--o{ SESSION : has
-    USER ||--o{ USER_ROLE : assigned
-    ROLE ||--o{ USER_ROLE : contains
-    ROLE ||--o{ ROLE_PERMISSION : has
-    PERMISSION ||--o{ ROLE_PERMISSION : defined
-
-    USER ||--o{ AUDIT_LOG : triggers
-
-    MEMBER ||--o{ PROJECT_MEMBER : participates
-    PROJECT ||--o{ PROJECT_MEMBER : involves
-    PROJECT ||--o{ PROJECT_BUDGET : allocated
-    PROJECT ||--o{ JOURNAL_ENTRY : tagged
-
-    ACCOUNT ||--o{ JOURNAL_LINE : referenced
-    JOURNAL_ENTRY ||--o{ JOURNAL_LINE : contains
-    JOURNAL_ENTRY ||--o{ TAX_WITHHOLDING : associates
-
-    TAX_TYPE ||--o{ TAX_RATE : defines
-    TAX_RATE ||--o{ TAX_WITHHOLDING : applies
-
-    ACCOUNTING_PERIOD ||--o{ JOURNAL_ENTRY : bounds
-
-    FOUNDATION_PROFILE ||--o{ FOUNDATION_OFFICER : includes
-    NEWS_CATEGORY ||--o{ NEWS_ARTICLE : categorizes
-```
+Model entitas relasional lengkap mencakup 70 tabel dalam 8 modul domain didefinisikan secara komprehensif pada [`docs/database/02-erd-overview.md`](./database/02-erd-overview.md) dan masing-masing berkas spesifikasi teknis modul domain di [`docs/database/00-README.md`](./database/00-README.md).
 
 ---
 
@@ -289,3 +232,6 @@ Image yang dibangun untuk aplikasi dan worker wajib mendukung arsitektur ganda v
 | **ADR-008** | 2026-11-05 | **Ekosistem Docker-First & Portabilitas**                            | **Docker Compose v2 Multi-Service & Multi-Arch**. Menstandarisasi layanan (`app`, `postgres`, `reverse-proxy`, `migrate`, `backup-worker`) dengan isolasi jaringan internal tanpa port binding ke DB/app guna menangkal UFW bypass di VPS, volume bernama, serta portabilitas total laptop $\leftrightarrow$ VPS.                                                                                                                                                                        |
 | **ADR-009** | 2026-11-05 | **Manajemen Kriptografi Multi-Kunci & Pola Migrasi Expand-Contract** | **Key Ring + Key ID, Blind Index HMAC Terpisah, dan Strategi Migrasi Expand-Contract**. Seluruh kunci kriptografi wajib direplikasi saat pemindahan mesin. Restart aplikasi diakui memiliki henti singkat terukur (bukan zero-downtime), migrasi skema wajib non-breaking (expand-contract), kegagalan ditangani dengan `prisma migrate resolve` (snapshot restore sebagai pilihan terakhir), cadangan offsite berbasis S3 diwajibkan, dan Caddy ditetapkan sebagai reverse proxy resmi. |
 | **ADR-010** | 2026-11-06 | **Resolusi Tabrakan Nama Entitas & Pemetaan Tabel Auth**             | **Bagan Akun `chart_of_accounts`, Kas/Bank `cash_bank_accounts`, Tabel Auth Domain Mandiri**. Menghindari tabrakan nama entitas generic `accounts`. Tabel auth domain (`users`, `sessions`, `two_factor_secrets`, `two_factor_recovery_codes`, `password_reset_tokens`) dirancang mandiri dan dipetakan ke library auth via custom adapter tanpa mengubah konvensi skema domain inti yayasan.                                                                                            |
+| **ADR-011** | 2026-11-06 | **Pemilihan Library Autentikasi & Integrasi Sesi Domain**            | **Better Auth dengan Pemetaan Skema Mandiri**. Opsi: Better Auth vs Auth.js vs In-House. Trade-off: Better Auth mendukung login username, 2FA TOTP RFC 6238, pencabutan sesi di DB, dan re-autentikasi aksi sensitif (`reauth_at`) secara native tanpa keterbatasan credentials Auth.js. Status: **DIPUTUSKAN**.                                                                                                                                                                         |
+| **ADR-012** | 2026-11-06 | **Model Pelacakan Salinan Cadangan Offsite**                         | **Kolom di `backup_jobs` (`offsite_status`, `offsite_storage_key`, `offsite_copied_at`)**. Opsi: Kolom langsung vs tabel `backup_copies`. Rekomendasi tegas: Kolom langsung untuk kesederhanaan 1 VPS + 1 bucket S3 offsite, dengan peringatan admin jika offsite gagal. Jalur migrasi ke tabel terpisah jika multi-cloud di masa depan. Status: **MENUNGGU PERSETUJUAN SAYA**.                                                                                                          |
+| **ADR-013** | 2026-11-06 | **Abstraksi Lapisan Penyimpanan Media (`StorageProvider`)**          | **Interface `StorageProvider` (Default `LocalStorageProvider`)**. Opsi: FS mentah vs S3 SDK vs Interface Provider. Rekomendasi tegas: Interface provider mengisolasi logika bisnis dari lokasi fisik (disk lokal volume Docker saat ini, siap pindah ke S3 via konfigurasi lingkungan tanpa refactor kode). Status: **DIPUTUSKAN**.                                                                                                                                                      |

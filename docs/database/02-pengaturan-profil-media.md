@@ -1,25 +1,49 @@
 # Modul 2 — Pengaturan, Profil Yayasan, dan Media (Fase 2)
 
-_Bagian dari [Spesifikasi Database](./00-README.md) · 7 tabel_
+_Bagian dari [Spesifikasi Database](./00-README.md) · 7 tabel · Sasaran: Fase 2 MASTER-PLAN_
+
+## 1. Tujuan & Sasaran Modul
+
+Modul ini mengelola aset media terpusat, identitas hukum yayasan (SK Kemenkumham, akta notaris, kop surat resmi), misi kelembagaan, tautan media sosial, konfigurasi dinamis aplikasi, pejabat penandatangan laporan resmi, dan penomoran dokumen gapless.
+
+```mermaid
+erDiagram
+    FOUNDATION_PROFILE ||--o| MEDIA_ASSETS : "logo"
+    FOUNDATION_PROFILE ||--o| MEDIA_ASSETS : "favicon"
+    FOUNDATION_PROFILE ||--o| MEDIA_ASSETS : "hero_banner"
+    FOUNDATION_PROFILE ||--o{ FOUNDATION_MISSIONS : "missions"
+    FOUNDATION_PROFILE ||--o{ FOUNDATION_SOCIAL_LINKS : "socials"
+    REPORT_SIGNATORIES ||--o| MEMBERS : "linked_member"
+```
 
 ---
 
+## 2. Kamus Tabel
+
 ### media_assets
 
-| Kolom           | Tipe   | Null  | Keterangan                                     |
-| :-------------- | :----- | :---- | :--------------------------------------------- |
-| `storage_key`   | text   | Tidak | Unik, pengenal nama acak di penyimpanan berkas |
-| `original_name` | text   | Tidak | Nama asli berkas                               |
-| `mime`          | text   | Tidak | Divalidasi via magic bytes tanda tangan biner  |
-| `size_bytes`    | bigint | Tidak | Ukuran dalam byte                              |
-| `sha256`        | text   | Tidak | Checksum integritas berkas                     |
-| `visibility`    | enum   | Tidak | PUBLIC, PRIVATE                                |
-| `width`         | int    | Ya    | Lebar piksel (untuk gambar)                    |
-| `height`        | int    | Ya    | Tinggi piksel (untuk gambar)                   |
-| `alt_text`      | text   | Ya    | Teks alternatif aksesibilitas                  |
-| `uploaded_by`   | uuid   | Tidak | FK → users                                     |
+| Kolom             | Tipe   | Null  | Keterangan                                       |
+| :---------------- | :----- | :---- | :----------------------------------------------- |
+| `storage_backend` | enum   | Tidak | `LOCAL, S3`. Default `LOCAL`                     |
+| `bucket`          | text   | Ya    | Nama bucket S3 (null bila `LOCAL`)               |
+| `storage_key`     | text   | Tidak | Unik, pengenal path/nama berkas acak (bukan URL) |
+| `original_name`   | text   | Tidak | Nama asli berkas saat diunggah                   |
+| `mime`            | text   | Tidak | Divalidasi via magic bytes tanda tangan biner    |
+| `size_bytes`      | bigint | Tidak | Ukuran berkas dalam byte                         |
+| `sha256`          | text   | Tidak | Checksum integritas berkas                       |
+| `visibility`      | enum   | Tidak | `PUBLIC, PRIVATE`                                |
+| `width`           | int    | Ya    | Lebar piksel (untuk gambar)                      |
+| `height`          | int    | Ya    | Tinggi piksel (untuk gambar)                     |
+| `alt_text`        | text   | Ya    | Teks alternatif aksesibilitas                    |
+| `uploaded_by`     | uuid   | Tidak | FK → users                                       |
 
-_Catatan: SD._
+_Catatan & Aturan Siklus Hidup Media:_
+
+- _SD (Soft Delete): Soft delete media TIDAK menghapus berkas fisik di disk secara otomatis; pembersihan berkas fisik dilakukan oleh background cleanup job berkala setelah masa retensi._
+- _Invarian Lampiran Transaksi: Berkas media yang ditautkan ke lampiran transaksi keuangan (`transaction_attachments`) DILARANG KERAS dihapus fisik maupun soft-delete._
+- _Keamanan Berkas PRIVATE: Berkas berstatus `PRIVATE` DILARANG memiliki URL publik langsung. Akses wajib melalui streaming endpoint berizin atau token unduh berumur pendek (`download_tokens`)._
+- _`storage_key` adalah pengenal path relatif di dalam volume penyimpanan (`uploads_private` / `uploads_public`), BUKAN URL publik._
+- _Konteks Penyimpanan: Single VPS dengan berkas disimpan di disk lokal melalui lapisan abstraksi `StorageProvider`. Migrasi ke bucket kompatibel S3 dapat dilakukan di masa mendatang tanpa mengubah skema tabel._
 
 ---
 
@@ -109,6 +133,21 @@ _Catatan: UQ (scope, year) dengan NULLS NOT DISTINCT. Alokasi nomor menggunakan 
 
 ---
 
+## 3. Aturan Database vs Aplikasi & Siklus Hidup Data
+
+1. **Aturan Database**:
+   - `foundation_profile` diisolasi sebagai _singleton_ via batasan `CHECK (id = 1)`.
+   - `number_sequences`: Alokasi nomor wajib menggunakan transaksi dengan row-level lock (`SELECT ... FOR UPDATE`) untuk menjamin nomor transaksi dan jurnal tidak pernah bolong (_gapless_).
+   - Validasi MIME type: Basis data menyimpan tipe MIME hasil verifikasi biner.
+2. **Aturan Aplikasi**:
+   - Lapisan `StorageProvider` mengisolasi berkas fisik. `storage_key` adalah path aman teracak, bukan URL publik.
+   - Nilai pada `app_settings.value` (JSONB) wajib divalidasi skema Zod sebelum disimpan.
+3. **Siklus Hidup Data**:
+   - Soft delete pada `media_assets` menandai berkas tidak aktif. Penghapusan berkas fisik di disk dilakukan secara aman oleh background worker setelah melewati masa retensi (default 30 hari).
+   - Berkas media yang terhubung ke dokumen keuangan resmi tidak dapat dihapus.
+
+---
+
 ## Usulan Tambahan, MENUNGGU PERSETUJUAN
 
 Tabel-tabel berikut **tidak ada dalam draf 70 tabel pemilik** dan diusulkan oleh tim arsitektur. Implementasi memerlukan persetujuan tertulis pemilik:
@@ -133,3 +172,9 @@ Sistem penandaan (_tagging_) media untuk kategorisasi aset di pustaka media.
 
 - **Dampak**: Menambah 2 tabel relasi dan UI tag management.
 - **Alternatif**: Gunakan kolom `alt_text` atau penamaan `storage_key` terstruktur.
+
+### (Usulan) Kolom Tambahan `media_assets`: `etag` dan `scan_status`
+
+- `etag` (text, nullable): Checksum ETag objek untuk validasi multipart upload S3 dan invalidasi cache browser/CDN.
+- `scan_status` (enum `PENDING, CLEAN, INFECTED`, default `PENDING`): Status pemindaian antivirus/malware secara asinkron sebelum file private disajikan.
+- **Status**: MENUNGGU PERSETUJUAN pemilik.

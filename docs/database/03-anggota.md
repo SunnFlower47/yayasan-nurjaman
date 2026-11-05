@@ -1,8 +1,24 @@
 # Modul 3 — Anggota (Fase 3)
 
-_Bagian dari [Spesifikasi Database](./00-README.md) · 6 tabel (3 inti + 3 opsional)_
+_Bagian dari [Spesifikasi Database](./00-README.md) · 6 tabel (3 inti + 3 opsional) · Sasaran: Fase 3 MASTER-PLAN_
+
+## 1. Tujuan & Sasaran Modul
+
+Modul ini mengelola basis data keanggotaan yayasan, histori mutasi jabatan pengurus/pembina/pengawas, penerbitan KTA berfoto (status default PRIVATE), penagihan iuran anggota, serta proses impor data massal yang aman tanpa kebocoran PII.
+
+```mermaid
+erDiagram
+    MEMBERS ||--o{ MEMBER_POSITION_HISTORY : "holds"
+    MEMBER_POSITIONS ||--o{ MEMBER_POSITION_HISTORY : "classifies"
+    MEMBERS ||--o{ MEMBER_DUES : "assessed"
+    MEMBER_IMPORT_BATCHES ||--o{ MEMBER_IMPORT_ERRORS : "logs"
+    MEMBERS ||--o| MEDIA_ASSETS : "photo"
+    MEMBERS ||--o| MEDIA_ASSETS : "kta_scan"
+```
 
 ---
+
+## 2. Kamus Tabel
 
 ### member_positions
 
@@ -100,6 +116,22 @@ _Catatan: UQ (member_id, period)._
 | `message`    | text | Tidak | Pesan galat validasi                          |
 
 _Catatan: Tidak menyimpan data mentah baris agar NIK tidak bocor ke tabel log ini._
+
+---
+
+## 3. Aturan Database vs Aplikasi & Siklus Hidup Data
+
+1. **Aturan Database**:
+   - Keunikan Parsial NIK: `nik_blind_index` unik hanya untuk baris aktif (`WHERE deleted_at IS NULL AND nik_blind_index IS NOT NULL`).
+   - Anti Tumpang Tindih Jabatan: `member_position_history` menerapkan `EXCLUDE USING gist` pada `(member_id WITH =, position_id WITH =, daterange(start_date, end_date) WITH &&)`.
+   - Integritas Impor: `member_import_errors` dilarang keras menyimpan baris mentah untuk mencegah kebocoran NIK ke tabel log unencrypted.
+2. **Aturan Aplikasi**:
+   - Enkripsi Aplikasi: NIK didekripsi hanya di memori server dan wajib dimasking sebelum dikirim ke UI client (`3201************`).
+   - Seluruh data anggota default `show_public = false` (private by default).
+   - Penggunaan `BLIND_INDEX_SECRET` terpisah untuk mendeteksi duplikasi pendaftaran NIK tanpa mendekripsi basis data.
+3. **Siklus Hidup Data**:
+   - Anggota keluar / mengundurkan diri: `status` beralih ke `RESIGNED`, `left_on` terisi, data historis tetap tersimpan untuk integritas laporan keuangan.
+   - Soft Delete: Pembatalan pendaftaran anggota menggunakan soft delete; data fisik tidak langsung dimusnahkan demi audit kepengurusan.
 
 ---
 

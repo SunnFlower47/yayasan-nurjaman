@@ -1,10 +1,28 @@
 # Modul 1 — Identitas dan Akses (Fase 1–2)
 
-_Bagian dari [Spesifikasi Database](./00-README.md) · 12 tabel_
+_Bagian dari [Spesifikasi Database](./00-README.md) · 12 tabel · Sasaran: Fase 1 & 2 MASTER-PLAN_
 
-> Bentuk akhir tabel autentikasi mengikuti library auth yang disahkan.
+## 1. Tujuan & Sasaran Modul
+
+Modul ini mengelola siklus hidup kredensial, autentikasi multi-faktor (TOTP), pengikatan sesi, hierarki izin berbasis peran (_Multi-Role RBAC_), pembatasan brute force, serta jejak audit aktivitas yang nirubah (_append-only_).
+
+```mermaid
+erDiagram
+    USERS ||--o{ SESSIONS : "has_active"
+    USERS ||--o| TWO_FACTOR_SECRETS : "protects"
+    USERS ||--o{ TWO_FACTOR_RECOVERY_CODES : "recovers"
+    USERS ||--o{ PASSWORD_RESET_TOKENS : "resets"
+    USERS ||--o{ USER_ROLES : "assigned"
+    ROLES ||--o{ USER_ROLES : "groups"
+    ROLES ||--o{ ROLE_PERMISSIONS : "binds"
+    PERMISSIONS ||--o{ ROLE_PERMISSIONS : "defines"
+    USERS ||--o{ AUDIT_LOGS : "logs_action"
+    USERS ||--o{ SECURITY_EVENTS : "logs_security"
+```
 
 ---
+
+## 2. Kamus Tabel
 
 ### users
 
@@ -167,6 +185,23 @@ _Catatan: Append-only murni, tanpa updated_at. Pengguna aplikasi tidak memiliki 
 | `details`     | jsonb       | Ya    | Detail konteks (tanpa data pribadi/token)                                                                                                            |
 
 _Catatan: Append-only._
+
+---
+
+## 3. Aturan Database vs Aplikasi & Siklus Hidup Data
+
+1. **Aturan Database**:
+   - `ON DELETE CASCADE` diterapkan pada relasi turunan pengguna: `sessions`, `two_factor_secrets`, `password_reset_tokens`, `user_roles`.
+   - Batasan Unik parsial pada `users(username)` dan `users(email)` di mana `deleted_at IS NULL`.
+   - Database Role Policy: Hak `UPDATE` dan `DELETE` dicabut mutlak pada `audit_logs` dan `security_events` bagi role aplikasi (`db_app`).
+2. **Aturan Aplikasi**:
+   - Validasi ketat format username (lowercase 3–32 karakter) dan password via Zod.
+   - Pengecekan otorisasi server-side (`requirePermission`) wajib di setiap Server Action / Mutation.
+   - Pesan galat autentikasi wajib generik guna mencegah enumerasi username.
+3. **Siklus Hidup Data**:
+   - Pembersihan sesi kedaluwarsa (`idle_expires_at` / `absolute_expires_at`) dijalankan oleh worker berkala.
+   - Akun user yang dinonaktifkan / dihapus menggunakan Soft Delete (`deleted_at`), otomatis membatalkan seluruh sesi aktif.
+   - `audit_logs` dan `security_events` berstatus nirubah (_immutable_) dan tidak dihapus.
 
 ---
 
