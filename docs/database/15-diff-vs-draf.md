@@ -53,6 +53,20 @@ Perbandingan dilakukan tabel demi tabel, kolom demi kolom, dengan membaca kedua 
 | `username`  | `users` | ✓                | ✓ (baris 37)          | **Sama** |
 | `member_id` | `users` | ✓ (FK → members) | ✓                     | **Sama** |
 
+#### Catatan Usulan Perubahan Jika Menggunakan Better Auth (ADR-011)
+
+Bila pemilik proyek memutuskan menggunakan library Better Auth (Jalan 1 pada ADR-011), maka akan terjadi usulan perubahan struktur Modul 1:
+
+| Item Perubahan                                | Di Draf Pemilik                     | Jika Better Auth (ADR-011)           | Status                                           | Alasan & Dampak                                                              |
+| :-------------------------------------------- | :---------------------------------- | :----------------------------------- | :----------------------------------------------- | :--------------------------------------------------------------------------- |
+| Tabel `auth_accounts`                         | Tidak ada                           | Ditambah                             | diubah karena library auth, MENUNGGU PERSETUJUAN | Tempat penyimpanan password hash credential di tabel `account`.              |
+| Kolom `password_hash` di `users`              | Ada di `users`                      | Dipindah ke `auth_accounts.password` | diubah karena library auth, MENUNGGU PERSETUJUAN | Pemisahan data autentikasi credential dari entitas pengguna.                 |
+| Tabel `verification_tokens`                   | Menggunakan `password_reset_tokens` | Menggantikan `password_reset_tokens` | diubah karena library auth, MENUNGGU PERSETUJUAN | Model standar Better Auth untuk reset password.                              |
+| Tabel `two_factor_secrets` & `recovery_codes` | 2 tabel terpisah                    | Digabung ke plugin `twoFactor`       | diubah karena library auth, MENUNGGU PERSETUJUAN | Plugin 2FA resmi Better Auth menyimpan secret dan backup codes terintegrasi. |
+| Kolom `email_verified` di `users`             | Tidak ada                           | Ditambah (boolean)                   | diubah karena library auth, MENUNGGU PERSETUJUAN | Field wajib core schema Better Auth.                                         |
+
+_(Jika pemilik menyetujui rekomendasi Jalan 2: Auth Tipis Buatan Sendiri, maka seluruh 12 tabel Modul 1 tetap 100% SAMA persis dengan draf pemilik tanpa ada perubahan)._
+
 ---
 
 ### Modul 2 — Pengaturan, Profil, dan Media (7 tabel)
