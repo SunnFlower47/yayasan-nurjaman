@@ -1,7 +1,24 @@
 {
   "extends": ["next/core-web-vitals", "next/typescript"],
   "rules": {
+    "max-lines": [
+      "error",
+      {
+        "max": 250,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "complexity": ["error", 10],
+    "max-params": ["error", 4],
+    "no-console": [
+      "error",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
     "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-non-null-assertion": "error",
     "@typescript-eslint/no-unused-vars": [
       "error",
       {
@@ -9,5 +26,48 @@
         "varsIgnorePattern": "^_"
       }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["tests/**/*.{ts,tsx}", "scripts/**/*.mjs"],
+      "rules": {
+        "max-lines": "off",
+        "complexity": "off",
+        "max-params": "off",
+        "no-console": "off"
+      }
+    },
+    {
+      "files": [
+        "src/components/**/*.{ts,tsx}",
+        "src/app/**/page.tsx",
+        "src/app/**/layout.tsx",
+        "src/app/**/components/**/*.{ts,tsx}",
+        "src/modules/**/components/**/*.{ts,tsx}"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@prisma/client",
+                "message": "Komponen UI dilarang mengimpor @prisma/client secara langsung. Gunakan alur Route/Action -> Service -> Repository."
+              },
+              {
+                "name": "@/lib/db",
+                "message": "Komponen UI dilarang mengimpor instance basis data langsung. Gunakan alur Route/Action -> Service -> Repository."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["**/repositories/**", "**/repositories"],
+                "message": "Komponen UI dilarang mengimpor berkas repository langsung."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }
