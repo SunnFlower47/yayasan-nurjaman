@@ -2,7 +2,7 @@
 
 ## Yayasan Nurjaman Bongas Purwakarta
 
-Dokumen ini adalah cetak biru komprehensif pengembangan sistem web publik dan panel administrasi terpadu Yayasan Nurjaman Bongas Purwakarta. Dokumen ini menjadi peta jalan tunggal (_single source of truth_) yang memandu urutan fase, lingkup kerja, dan kriteria penyelesaian.
+Dokumen ini adalah cetak biru komprehensif pengembangan sistem web resmi dan panel administrasi terpadu Yayasan Nurjaman Bongas Purwakarta. Dokumen ini menjadi peta jalan tunggal (_single source of truth_) yang memandu urutan fase, lingkup kerja, checklist keamanan, dan pengujian kasus negatif.
 
 ---
 
@@ -12,296 +12,308 @@ Dokumen ini adalah cetak biru komprehensif pengembangan sistem web publik dan pa
 
 Membangun platform digital kelembagaan terintegrasi yang:
 
-1. Menyajikan profil, visi misi, kegiatan sosial, dan keterbukaan informasi publik Yayasan Nurjaman Bongas Purwakarta kepada masyarakat luas dan donatur.
-2. Menyediakan perangkat tata kelola internal berbasis tata buku akuntansi nirlaba modern sesuai standar **ISAK 35** (Interpretasi Standar Akuntansi Keuangan untuk Entitas Berorientasi Nonlaba).
-3. Mengelola keanggotaan, anggaran program/kegiatan, pemotongan pajak berkonfigurasi dinamis, serta perlindungan data melalui jejak audit ketat dan cadangan berkala.
+1. Menyediakan panel internal terpadu untuk tata kelola akuntansi nirlaba modern berbasis **ISAK 35** (Interpretasi Standar Akuntansi Keuangan untuk Entitas Berorientasi Nonlaba).
+2. Mengelola keanggotaan (pengurus, relawan, donatur), anggaran kegiatan sosial, kalkulasi pajak berkonfigurasi tanggal, jejak audit nirubah (_immutable audit trail_), dan pencadangan data otomatis.
+3. Menyajikan website profil publik editorial yang elegan dan akuntabel yang mengonsumsi data riil dari modul CMS dan laporan keuangan yang telah disahkan dari panel admin.
 
-### 2. Ruang Lingkup (In Scope)
+### 2. Prioritas Pengerjaan: Admin Panel Terlebih Dahulu, Situs Publik Terakhir
 
-- Website publik responsif dan elegan dengan tata letak editorial.
-- Modul profil dinamis (nama, logo, visi misi, legalitas SK Kemenkumham, struktur pengurus dapat diubah dari admin).
-- Publikasi berita, artikel, dan galeri dokumentasi kegiatan yayasan.
-- Manajemen anggota (pengurus, pembina, relawan, donatur tetap).
-- Sistem akuntansi entitas nonlaba (Bagan Akun Standar/COA, Jurnal Umum, Buku Besar, Kas & Bank, Aset Neto Dengan dan Tanpa Pembatasan).
-- Manajemen proyek/kegiatan yang terhubung dengan pos anggaran dan pencairan dana.
-- Modul kalkulasi perpajakan (PPh 21, PPh 23, PPh Final, dll.) dengan tarif berversi tanggal.
-- Laporan Keuangan ISAK 35 (Posisi Keuangan, Penghasilan Komprehensif, Arus Kas, Catatan atas Laporan Keuangan).
-- Panel pengaturan sistem, Role-Based Access Control (RBAC), Audit Trail, dan Backup/Restore data.
-
-### 3. Di Luar Lingkup (Out of Scope)
-
-- Sistem pembayaran daring otomatis / Payment Gateway real-time (fase ini pencatatan penerimaan kas dicatat manual oleh bendahara berdasarkan bukti transfer).
-- Aplikasi mobile native (iOS/Android) — sistem fokus pada web responsif PWA-ready.
-- Integrasi otomatis langsung ke server DJP / e-Faktur (sistem menyediakan modul hitung dan pencetakan bukti potong standar, pelaporan SPT dilakukan terpisah).
+Urutan pembangunan mengutamakan **Fondasi Administratif dan Tata Kelola Keuangan Internal Terlebih Dahulu (Fase 1 s.d. 8)**, disusul oleh **Website Publik (Fase 9)**, dan diakhiri dengan **Hardening & Audit Akhir (Fase 10)**. Hal ini menjamin bahwa seluruh data profil, program, dokumentasi, dan transparansi yang ditampilkan ke publik bersumber dari basis data yang telah dikelola dan diverifikasi secara kredibel oleh pengurus.
 
 ---
 
 ## B. Pengguna & Peran Sistem (User Roles)
 
-Sistem memiliki 7 tingkatan peran dengan hierarki dan kebutuhan spesifik:
+Sistem memiliki 7 tingkatan peran dengan pemisahan tugas (_segregation of duties_):
 
-1. **Super Admin**:
-   - Memiliki kendali teknis penuh: konfigurasi server, manajemen user & permission, audit trail, backup/restore database, pemulihan sistem.
-2. **Pembina Yayasan**:
-   - Akses read-only ke seluruh laporan keuangan eksekutif, rekapitulasi aset neto, ringkasan audit, dan evaluasi capaian program.
-3. **Ketua Yayasan**:
-   - Memantau dasbor kinerja lembaga, persetujuan rencana anggaran proyek, dan otorisasi kebijakan umum.
-4. **Sekretaris**:
-   - Mengelola data anggota/pengurus, surat-menyurat kelembagaan, arsip legalitas, dan publikasi profil/berita kegiatan.
-5. **Bendahara**:
-   - Operator utama transaksi keuangan: input kas masuk/keluar, penjurnalan, rekonsiliasi bank, pemotongan pajak, tutup buku periode, pencetakan laporan ISAK 35.
-6. **Pengawas Yayasan**:
-   - Akses pengawasan independen: memverifikasi keabsahan jurnal, memantau audit log mutasi kas, dan memeriksa kepatuhan anggaran.
-7. **Editor Konten**:
-   - Dibatasi hanya untuk menyusun draf berita, mengunggah galeri foto, dan mengelola artikel website publik.
+1. **Super Admin**: Pengaturan sistem, manajemen pengguna, role & permission, pemulihan cadangan data, dan audit keamanan.
+2. **Pembina Yayasan**: Akses eksekutif _read-only_ ke seluruh laporan keuangan ISAK 35, evaluasi aset neto, dan ringkasan kepatuhan.
+3. **Ketua Yayasan**: Persetujuan (_approver_) permohonan dana proyek, penutupan buku tahunan, dan kebijakan umum lembaga.
+4. **Sekretaris**: Pengelolaan data anggota/relawan, surat keluar/masuk, arsip legalitas SK, dan verifikasi status anggota.
+5. **Bendahara**: Operator keuangan utama (_maker_ penerimaan & _approver_ pencairan kas), penjurnalan, rekonsiliasi kas/bank, pemotongan pajak, tutup buku, dan penerbitan laporan keuangan.
+6. **Pengawas Yayasan**: Akses pengawasan independen terhadap keabsahan transaksi jurnal dan integritas audit trail.
+7. **Editor Konten**: Pengelolaan draf artikel berita, galeri dokumentasi kegiatan, dan konten informasi publik.
 
 ---
 
-## C. Rincian Modul & Fungsionalitas
-
-### 1. Profil Yayasan Dinamis (`src/modules/content/`)
-
-- Manajemen identitas: Nama resmi, logo, favicon, slogan, sejarah, visi misi, nomor kontak, email, alamat kantor (Bongas, Purwakarta), koordinat peta.
-- Legalitas hukum: Nomor Akta Notaris, SK Kemenkumham, NPWP Yayasan, Rekening Bank Resmi.
-- Struktur organisasi dinamis: Bagan dewan pembina, pengawas, dan pengurus harian dengan foto dan jabatan.
-
-### 2. Website Publik (`src/app/(public)/`)
-
-- Halaman Beranda: Tajuk editorial, program unggulan, ringkasan dampak sosial, dokumentasi terbaru.
-- Halaman Profil & Visi Misi: Gambaran lembaga dan susunan pengurus.
-- Halaman Program / Proyek: Portofolio aksi sosial dan pemberdayaan masyarakat di Purwakarta.
-- Halaman Berita & Galeri: Liputan kegiatan dengan filter kategori.
-- Halaman Transparansi Opsional: Ringkasan laporan publikasi donasi dan penggunaan dana.
-- Halaman Kontak: Formulir pesan dan peta lokasi sekretariat.
-
-### 3. Manajemen Anggota (`src/modules/members/`)
-
-- Kategori anggota: Pengurus, Pembina, Pengawas, Relawan, Donatur.
-- Biodata lengkap, nomor kontak, riwayat keikutsertaan program, dan status keaktifan.
-
-### 4. Akuntansi & Keuangan ISAK 35 (`src/modules/finance/`)
-
-- **Bagan Akun (Chart of Accounts / COA)**:
-  - Klasifikasi Aset, Liabilitas, Aset Neto Tanpa Pembatasan, Aset Neto Dengan Pembatasan, Pendapatan, dan Beban.
-- **Jurnal Umum & Transaksi**:
-  - Validasi ketat keseimbangan Debit = Kredit.
-  - Alur transaksi: DRAFT → POSTED. Transaksi posted terkunci permanen, koreksi via VOID / Jurnal Pembalik.
-- **Buku Kas & Bank**:
-  - Pencatatan mutasi kas kecil, rekening giro, dan rekonsiliasi kas masuk/keluar.
-- **Penguncian Periode (Tutup Buku)**:
-  - Penutupan bulanan/tahunan untuk mencegah posting susulan ke periode lampau.
-
-### 5. Proyek & Anggaran (`src/modules/projects/`)
-
-- Rencana Anggaran Biaya (RAB) per proyek/kegiatan.
-- Pelacakan realisasi pengeluaran terhadap pagu anggaran (indikator peringatan jika mendekati batas).
-- Hubungan langsung ke kode akun jurnal pembukuan.
-
-### 6. Perpajakan Berkonfigurasi (`src/modules/tax/`)
-
-- Master data jenis pajak: PPh 21 (honor/upah relawan/narasumber), PPh 23 (sewa/jasa), PPh Final 4(2), dll.
-- Konfigurasi tarif dengan rentang tanggal berlaku (`effective_date` & `expiry_date`).
-- Pembuatan dan pencetakan Bukti Potong Pajak standar.
-- _Catatan Kepatuhan_: Seluruh aturan penerapan tarif wajib diverifikasi oleh akuntan/konsultan pajak yayasan.
-
-### 7. Pelaporan ISAK 35 & Pendukung (`src/modules/finance/`)
-
-- Laporan Posisi Keuangan (Neraca).
-- Laporan Penghasilan Komprehensif (Aktivitas).
-- Laporan Arus Kas (Metode Langsung / Tidak Langsung).
-- Laporan Perubahan Aset Neto.
-- Tampilan cetak standar dokumen resmi dengan kop surat dan kolom tanda tangan pengurus.
-
-### 8. Tata Kelola, Keamanan & Pengaturan (`src/modules/settings/`, `audit/`, `backup/`)
-
-- Autentikasi aman dan RBAC berbasis permission granular (`modul.aksi`).
-- Audit trail tak terhapus untuk seluruh aksi mutasi data penting.
-- Fasilitas backup berkala database dan pemulihan (restore).
-
----
-
-## D. Fase Pengerjaan & Roadmap Sekuensial
+## C. Roadmap Sekuensial (11 Fase)
 
 ```mermaid
 flowchart TD
-    F0["Fase 0: Setup & Aturan (Sesi Ini)"] --> F1["Fase 1: Fondasi Auth, RBAC, Layout"]
-    F1 --> F2["Fase 2: Profil Dinamis & Website Publik"]
-    F2 --> F3["Fase 3: Manajemen Anggota"]
+    F0["Fase 0: Setup & Fondasi (Selesai)"] --> F05["Fase 0.5: Pengetatan Aturan & Keamanan (Aktif)"]
+    F05 --> F1["Fase 1: Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit"]
+    F1 --> F2["Fase 2: Pengaturan Sistem, Profil Admin & Manajemen User"]
+    F2 --> F3["Fase 3: Manajemen Anggota & Data Masking"]
     F3 --> F4["Fase 4: Keuangan Inti & Akuntansi ISAK 35"]
-    F4 --> F5["Fase 5: Proyek & Anggaran Kegiatan"]
-    F5 --> F6["Fase 6: Modul Perpajakan"]
-    F6 --> F7["Fase 7: Pelaporan ISAK 35 & Cetak"]
-    F7 --> F8["Fase 8: Pengaturan, Backup, Hardening & Deploy"]
+    F4 --> F5["Fase 5: Proyek, Anggaran & Keterkaitan Keuangan"]
+    F5 --> F6["Fase 6: Perpajakan Berkonfigurasi Dinamis"]
+    F6 --> F7["Fase 7: Pelaporan ISAK 35, Dashboard & Ekspor"]
+    F7 --> F8["Fase 8: Manajemen Konten Admin & Backup/Restore"]
+    F8 --> F9["Fase 9: Website Publik, Transparansi & SEO"]
+    F9 --> F10["Fase 10: Hardening Akhir, Pentest & Rilis Produksi"]
 ```
 
-### Fase 0: Setup, Tooling & Konfigurasi (Sesi Ini)
+---
 
-- **Tujuan**: Membangun fondasi arsitektur terstandar, dokumen kerja, dan sistem changelog.
+## D. Rincian Fase Pengembangan
+
+### Fase 0: Setup Fondasi Proyek, Tooling & Konfigurasi (Status: Selesai)
+
+- **Tujuan**: Membangun fondasi arsitektur modular, tooling, dan sistem changelog.
+- **Ruang Lingkup Selesai**:
+  - Inisialisasi Next.js 15, TypeScript strict (`noUncheckedIndexedAccess`), Tailwind, ESLint, Prettier, Husky.
+  - Sampling token warna resmi dari logo (`#29c668`, `#ffff00`, `#020202`, `#ff4745`).
+  - Halaman dev-only `/dev/tokens`, route `/api/health`, placeholder `/`.
+  - Sistem changelog `pnpm changelog:new` dan pre-commit check.
+  - Entri changelog `0001-2026-11-04-setup-fondasi-proyek.md`.
+
+---
+
+### Fase 0.5: Memperketat Aturan, Standar Kode & Fondasi Keamanan (Status: Aktif)
+
+- **Tujuan**: Menegakkan batas kualitas kode, arsitektur berlapis, dan konfigurasi keamanan tanpa membuat fitur domain.
 - **Ruang Lingkup**:
-  - [x] Inisialisasi git, Next.js, TypeScript strict (`noUncheckedIndexedAccess`), Tailwind, ESLint, Prettier, Husky.
-  - [x] Salin logo resmi yayasan ke `public/brand/` dan sampling palet warna langsung dari pixel logo.
-  - [x] Desain token sistem (`tokens.css`), konfigurasi font (`Source Serif 4` & `Plus Jakarta Sans`).
-  - [x] Halaman placeholder minimal `/`, route `/api/health`, dan pratinjau dev-only `/dev/tokens`.
-  - [x] Validasi env dengan Zod (`src/lib/env.ts`), singleton Prisma (`src/lib/db.ts`), utilitas format & error.
-  - [x] Sistem changelog (`changelogs/`, script CLI, penegakan git pre-commit).
-  - [x] Dokumen aturan lengkap: `AGENTS.md`, `WORKING-RULES.md`, `UI-UX-RULES.md`, `MASTER-PLAN.md`, `ARCHITECTURE.md`.
-- **Kriteria Selesai**: Typecheck, lint, dan test lulus; health endpoint aktif; pre-commit menolak commit tanpa changelog; entri 0001 dibuat.
-- **Risiko**: Ketidaksesuaian runtime Windows diselesaikan dengan pnpm.cmd dan isolated sandbox practices.
+  - [x] Audit komprehensif hasil Fase 0 (inspeksi git history, port postgres 127.0.0.1, audit dependency, perbaikan CVE Next.js & PostCSS).
+  - [x] Dokumen standar rekayasa: `docs/CODE-STANDARDS.md` dan `docs/SECURITY.md`.
+  - [x] Pembaruan dokumen lama: `AGENTS.md`, `WORKING-RULES.md`, `MASTER-PLAN.md`, `ARCHITECTURE.md`, `UI-UX-RULES.md`.
+  - [x] Penegakan tooling otomatis: ESLint max-lines 250 (error 300), complexity 10, no-console, no-any, check-layers AST script, scan-secrets hook.
+  - [x] Baseline keamanan konfigurasi: Security headers & CSP nonce via `src/middleware.ts`, `src/app/robots.ts` (disallow admin/api), `.dockerignore`, `docker-compose.prod.example.yml`, `.github/workflows/ci.yml`.
+  - [x] Uji E2E Playwright untuk security headers.
+  - [x] Entri changelog terpisah (`0002` s.d. `0006`).
+- **Checklist Keamanan Fase 0.5**:
+  - [x] `pnpm secrets:scan` bersih dari kunci rahasia.
+  - [x] `node scripts/check-layers.mjs` mendeteksi 0 pelanggaran batas lapis.
+  - [x] Port database terikat ke 127.0.0.1; user runner Docker non-root.
+  - [x] Header X-Frame-Options: DENY, X-Content-Type-Options: nosniff, CSP, dan HSTS aktif.
+- **Checklist Pengujian Kasus Negatif Fase 0.5**:
+  - [x] Uji coba commit file staged dengan rahasia tiruan ditolak oleh pre-commit hook.
+  - [x] Uji coba impor `@prisma/client` pada komponen UI ditolak oleh linter dan check-layers.
+  - [x] Uji coba akses rute `/dev/tokens` pada mode `NODE_ENV=production` mengembalikan HTTP 404 Not Found.
 
-### Fase 1: Fondasi Autentikasi, RBAC, Layout & Audit Log
+---
 
-- **Tujuan**: Menyiapkan akses masuk aman, hierarki izin pengguna, layout admin/publik, dan sistem perekam audit.
+### Fase 1: Fondasi Admin: Autentikasi, 2FA, Sesi, RBAC, Layout Admin & Audit Log
+
+- **Tujuan**: Menyiapkan akses masuk aman, hierarki izin pengguna, shell layout admin, dan audit log inti.
 - **Ruang Lingkup**:
-  - [ ] Implementasi skema tabel User, Session, Role, Permission, dan AuditLog di Prisma.
-  - [ ] Alur masuk admin, proteksi session berbasis cookie httpOnly yang aman.
-  - [ ] Sistem otorisasi middleware dan server-side permission check (`hasPermission("modul.aksi")`).
-  - [ ] Shell layout admin (Sidebar navigasi, header pengurus, breadcrumbs, tombol tema).
-  - [ ] Komponen UI atomik dasar sesuai token (Tombol, Input, Modal, Badge, Skeleton, Toast).
-  - [ ] Service perekam Audit Trail otomatis.
-- **Kriteria Selesai**: Admin dapat login, role dibatasi sesuai izin, aksi tercatat di audit log.
-- **Risiko**: Kerentanan session hijacking dan IDOR; mitigasi dengan token cryptographically secure dan pengecekan otorisasi server-side.
+  - Skema tabel User, Session, Account, Role, Permission, dan AuditLog di Prisma.
+  - Autentikasi berbasis password ter-hash Argon2id, cookie sesi aman (`HttpOnly`, `SameSite=Lax`, `Secure`, prefix `__Host-`).
+  - Otentikasi dua faktor (TOTP RFC 6238) wajib untuk Super Admin, Ketua, dan Bendahara.
+  - Sistem verifikasi izin server-side (`requireUser()`, `requirePermission()`) pada setiap Server Action.
+  - Shell layout admin (Sidebar responsif, Header pengurus, Breadcrumb, Dark mode).
+  - Pustaka komponen atomik bersama di `src/components/ui/` dan `src/components/shared/` dasar.
+  - Service Audit Log append-only terpusat.
+- **Checklist Keamanan**:
+  - [ ] Rate limiting login (maks 5 kegagalan per 15 menit per IP).
+  - [ ] Session invalidation instan saat logout dan saat pergantian password.
+  - [ ] Otorisasi server-side aktif pada seluruh Server Action admin (bukan hanya middleware).
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Permintaan Server Action tanpa sesi ditolak (HTTP 401 Unauthorized).
+  - [ ] Pengguna tanpa hak akses ditolak saat memanggil aksi administratif (HTTP 403 Forbidden).
+  - [ ] Login dengan 6 kali password salah diblokir sementara (HTTP 429 Too Many Requests).
 
-### Fase 2: Profil Yayasan Dinamis, Berita & Website Publik
+---
 
-- **Tujuan**: Meluncurkan wajah publik yayasan yang dapat dikelola secara mandiri dari admin panel.
+### Fase 2: Pengaturan Sistem, Profil Yayasan (Sisi Admin) & Manajemen Pengguna
+
+- **Tujuan**: Memfasilitasi konfigurasi identitas kelembagaan dinamis dan manajemen hak akses pengguna oleh Super Admin.
 - **Ruang Lingkup**:
-  - [ ] Tabel data Profil Yayasan, Struktur Pengurus, Berita/Artikel, dan Kategori.
-  - [ ] Panel admin untuk mengedit identitas yayasan, susunan pengurus, dan legalitas SK.
-  - [ ] Admin editor berita (rich text dengan sanitasi HTML ketat) dan galeri dokumentasi kegiatan.
-  - [ ] Halaman publik: Beranda, Profil & Visi Misi, Berita, Galeri, Kontak.
-- **Kriteria Selesai**: Halaman publik tampil profesional sesuai UI-UX-RULES, konten berita dan profil dinamis dapat diubah dari admin.
-- **Risiko**: Masalah keamanan unggahan berkas gambar dan XSS; mitigasi dengan validasi tipe berkas dan HTML sanitizer.
+  - Skema tabel FoundationProfile, LegalDocument, OrganizationStructure, SystemSettings.
+  - Antarmuka admin manajemen profil: nama yayasan, visi-misi, kontak, alamat Bongas, nomor legalitas SK Kemenkumham, rekening bank resmi.
+  - Manajemen pengguna internal: undang pengurus baru, penugasan role, reset password, dan status aktif/nonaktif.
+- **Checklist Keamanan**:
+  - [ ] Hanya Super Admin yang berhak memodifikasi pengaturan sistem dan role pengguna.
+  - [ ] Otentikasi ulang (_step-up auth_) saat mengubah peran pengguna menjadi Super Admin/Bendahara.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Staf biasa mencoba mengakses route/action manajemen user ditolak (403).
+  - [ ] Pembaruan profil dengan data malformasi (email/URL tidak valid) ditolak skema Zod (422).
 
-### Fase 3: Manajemen Anggota & Pengurus
+---
 
-- **Tujuan**: Tata kelola data anggota, donatur, relawan, dan dewan pengurus yayasan.
+### Fase 3: Manajemen Anggota & Data Masking
+
+- **Tujuan**: Mengelola direktori anggota, dewan pengurus, relawan, dan donatur tetap yayasan dengan perlindungan privasi.
 - **Ruang Lingkup**:
-  - [ ] Skema database Member, MemberCategory, dan RiwayatKeaktifan.
-  - [ ] CRUD data anggota dengan filter kategori, pencarian, dan pagination.
-  - [ ] Fitur ekspor data anggota (format CSV/Excel aman).
-- **Kriteria Selesai**: Pengurus dapat mengelola direktori anggota dengan validasi data yang presisi.
-- **Risiko**: Kebocoran data pribadi (PII); mitigasi dengan pembatasan hak akses berbasis RBAC dan audit log akses data.
+  - Skema database Member, MemberCategory, MemberHistory.
+  - Form pendataan anggota dengan validasi NIK dan enkripsi at-rest AES-256-GCM.
+  - Antarmuka data table anggota dengan paginasi, pencarian, dan filter kategori.
+  - Fitur penyamaran data (_data masking_) untuk NIK dan kontak pada tabel umum.
+  - Ekspor data anggota berizin khusus dengan pencatatan audit log otomatis.
+- **Checklist Keamanan**:
+  - [ ] Data NIK tersimpan terenkripsi di PostgreSQL.
+  - [ ] Penyamaran data NIK aktif secara default di antarmuka (`3201************`).
+  - [ ] Ekspor data dibatasi hanya untuk Sekretaris dan Super Admin.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Percobaan injeksi SQL melalui parameter filter/search ditolak Prisma parameterized query.
+  - [ ] Permintaan pembukaan data NIK tanpa izin khusus ditolak (403).
+
+---
 
 ### Fase 4: Keuangan Inti & Akuntansi Nirlaba ISAK 35
 
-- **Tujuan**: Membangun mesin pencatatan transaksi jurnal berimbang dan buku besar.
+- **Tujuan**: Membangun mesin pencatatan transaksi jurnal berimbang ganda dan pengelolaan kas/bank.
 - **Ruang Lingkup**:
-  - [ ] Skema database Account (COA), JournalEntry, JournalLine, CashBank, AccountingPeriod.
-  - [ ] Master Bagan Akun Standar Entitas Nonlaba (Aset Neto Dengan & Tanpa Pembatasan).
-  - [ ] Form input transaksi kas & jurnal umum dengan validasi real-time Debit = Kredit.
-  - [ ] Logika status DRAFT → POSTED dan mekanisme pembatalan VOID (jurnal pembalik).
-  - [ ] Fitur Penguncian Periode / Tutup Buku Bulanan.
-- **Kriteria Selesai**: Seluruh invarian akuntansi terpenuhi; transaksi tidak seimbang ditolak sistem; unit test akuntansi lulus 100%.
-- **Risiko**: Kesalahan logika pembukuan; mitigasi dengan unit test komprehensif untuk seluruh skenario jurnal.
+  - Skema database ChartOfAccount (COA), JournalEntry, JournalLine, CashAccount, AccountingPeriod.
+  - Bagan Akun Standar Entitas Nonlaba (Aset Neto Dengan & Tanpa Pembatasan).
+  - Form input kas masuk/keluar & jurnal umum dengan validasi real-time Debit = Kredit.
+  - Siklus transaksi: DRAFT → PENDING APPROVAL → POSTED.
+  - Mekanisme pembatalan VOID (jurnal pembalik nirubah, transaksi posted tidak dapat diedit).
+  - Fitur Penguncian Periode / Tutup Buku Bulanan & Tahunan.
+  - Alur Maker-Checker untuk permohonan pencairan kas.
+- **Checklist Keamanan**:
+  - [ ] Invarian akuntansi mutlak: Debit == Kredit ditegakkan di Service dan Transaction level.
+  - [ ] Anti-self-approval: Pembuat draf dilarang menyetujui transaksinya sendiri.
+  - [ ] Transaksi berstatus POSTED terkunci dari perubahan atau penghapusan fisik.
+  - [ ] Rekaman mutasi keuangan selalu mencatat audit log append-only.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Transaksi jurnal dengan selisih Debit dan Kredit Rp 1 ditolak keras (422 Unprocessable Entity).
+  - [ ] Permintaan edit/delete pada transaksi `POSTED` ditolak (400 Bad Request).
+  - [ ] Pembuatan jurnal pada periode akuntansi berstatus `CLOSED` ditolak (400 Bad Request).
 
-### Fase 5: Proyek & Anggaran Kegiatan
+---
 
-- **Tujuan**: Menghubungkan program kerja sosial dengan alokasi pos keuangan dan pelacakan realisasi.
+### Fase 5: Proyek, Anggaran & Keterkaitan Keuangan
+
+- **Tujuan**: Mengaitkan program kerja sosial dengan alokasi pos keuangan dan pelacakan serapan anggaran.
 - **Ruang Lingkup**:
-  - [ ] Skema database Project, ProjectBudget, ProjectExpense.
-  - [ ] Pengelolaan rencana anggaran per kegiatan sosial yayasan di Purwakarta.
-  - [ ] Integrasi otomatis antara pengeluaran proyek dengan jurnal kas keluar di modul keuangan.
-  - [ ] Laporan evaluasi serapan anggaran proyek (Pagu vs Realisasi vs Sisa).
-- **Kriteria Selesai**: Setiap pencairan dana proyek otomatis membentuk jurnal pembukuan dan memperbarui sisa pagu anggaran.
-- **Risiko**: Terjadinya pengeluaran melebihi anggaran (_over-budget_); mitigasi dengan peringatan validasi pada layer service.
+  - Skema database Project, ProjectBudget, ProjectDisbursement.
+  - Rencana Anggaran Biaya (RAB) per proyek sosial kemasyarakatan di Purwakarta.
+  - Integrasi otomatis: persetujuan pencairan dana proyek langsung membentuk jurnal kas keluar di modul keuangan.
+  - Pelacakan serapan anggaran (Pagu vs Realisasi vs Sisa) dengan indikator batas.
+- **Checklist Keamanan**:
+  - [ ] Pencairan dana proyek memerlukan otorisasi Ketua Yayasan atau Bendahara.
+  - [ ] Validasi pagu: sistem menolak atau memberi peringatan keras saat pengeluaran melebihi sisa anggaran.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Pengajuan pencairan pada proyek berstatus `COMPLETED` atau `CANCELLED` ditolak (400).
+  - [ ] Permintaan pencairan dana oleh akun non-pengurus proyek ditolak (403).
+
+---
 
 ### Fase 6: Perpajakan Berkonfigurasi Dinamis
 
-- **Tujuan**: Menghitung dan menerbitkan bukti potong pajak atas honor, sewa, atau transaksi jasa.
+- **Tujuan**: Mengelola perhitungan pemotongan pajak dan penerbitan bukti potong tanpa hardcode tarif.
 - **Ruang Lingkup**:
-  - [ ] Skema database TaxType, TaxRate (berversi tanggal efektif), dan TaxWithholding (Bukti Potong).
-  - [ ] Antarmuka pengaturan tarif pajak di admin (tanpa hardcode di source code).
-  - [ ] Perhitungan otomatis PPh 21 / PPh 23 pada transaksi yang relevan.
-  - [ ] Fitur pencetakan Bukti Potong Pajak format standar.
-- **Kriteria Selesai**: Kalkulasi pajak sesuai aturan berversi; bukti potong dapat diunduh/dicetak; unit test hitung pajak lulus.
-- **Risiko**: Perubahan regulasi tarif pajak; mitigasi dengan arsitektur tarif dinamis berversi tanggal.
+  - Skema database TaxType, TaxRate (berversi tanggal berlaku `effective_date` & `expiry_date`), dan TaxWithholding.
+  - Antarmuka admin master tarif pajak (PPh 21, PPh 23, PPh Final).
+  - Perhitungan otomatis potongan pajak pada pengeluaran honor/sewa/jasa di modul keuangan.
+  - Pembuatan dan pencetakan dokumen Bukti Potong Pajak standar.
+- **Checklist Keamanan**:
+  - [ ] Tarif pajak dibaca dinamis berdasarkan tanggal transaksi, bukan dari kode program.
+  - [ ] Perubahan tarif pajak memerlukan otentikasi ulang Bendahara.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Perhitungan pajak dengan tanggal di luar rentang tanggal berlaku mengembalikan galat konfigurasi (422).
+  - [ ] Pengubahan tarif pajak lampau yang telah dipakai transaksi posted ditolak (400).
 
-### Fase 7: Pelaporan Keuangan ISAK 35 & Cetak Dokumen
+---
 
-- **Tujuan**: Menyajikan laporan keuangan formal yang siap diaudit dan dipresentasikan kepada pembina/donatur.
+### Fase 7: Pelaporan Keuangan ISAK 35, Dashboard & Ekspor Dokumen
+
+- **Tujuan**: Menyajikan laporan keuangan formal nirlaba yang siap diaudit dan dipresentasikan ke Pembina/Donatur.
 - **Ruang Lingkup**:
-  - [ ] Generator Laporan Posisi Keuangan (Neraca).
-  - [ ] Generator Laporan Penghasilan Komprehensif (Laporan Aktivitas Yayasan).
-  - [ ] Generator Laporan Arus Kas & Laporan Perubahan Aset Neto.
-  - [ ] Tata letak cetak dokumen resmi (CSS Print, kop surat dinamis, blok tanda tangan pengurus).
-  - [ ] Halaman transparansi publik (opsional, menampilkan ringkasan teragregasi yang telah disetujui ketua).
-- **Kriteria Selesai**: Laporan akurat sesuai data jurnal; tampilan cetak presisi dan rapi pada kertas A4.
-- **Risiko**: Inkonsistensi angka laporan; mitigasi dengan pengujian rekonsiliasi matematis antara neraca dan laporan aktivitas.
+  - Generator Laporan Posisi Keuangan (Neraca Nirlaba).
+  - Generator Laporan Penghasilan Komprehensif (Laporan Aktivitas: Terikat & Tidak Terikat).
+  - Generator Laporan Arus Kas (Metode Langsung/Tidak Langsung) & Laporan Perubahan Aset Neto.
+  - Dashboard analitik keuangan untuk Pembina dan Ketua Yayasan.
+  - Format cetak dokumen standar resmi (A4, kop surat yayasan, kolom tanda tangan pejabat).
+  - Ekspor laporan ke PDF dan lembar kerja Excel bertipe presisi.
+- **Checklist Keamanan**:
+  - [ ] Akses laporan keuangan dibatasi hanya untuk peran Pembina, Ketua, Pengawas, dan Bendahara.
+  - [ ] Rekonsiliasi matematis: Neraca wajib seimbang antara Aset dengan Liabilitas + Aset Neto.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Editor Konten atau Staf Lapangan mencoba mengakses laporan ISAK 35 ditolak (403).
+  - [ ] Ekspor laporan pada rentang tanggal tidak valid (tanggal awal > akhir) ditolak Zod (422).
 
-### Fase 8: Pengaturan Sistem, Cadangan Data, Hardening & Deployment
+---
 
-- **Tujuan**: Memastikan keandalan sistem, pemulihan bencana, optimasi performa, dan kesiapan rilis produksi.
+### Fase 8: Manajemen Konten Admin (CMS) & Backup/Restore Sistem
+
+- **Tujuan**: Fasilitas penyusunan konten publik secara mandiri dari admin panel serta perlindungan integritas data.
 - **Ruang Lingkup**:
-  - [ ] Modul Backup dan Restore database otomatis (kompresi terenkripsi).
-  - [ ] Peninjau audit log aktivitas admin dan pencarian log keamanan.
-  - [ ] Audit keamanan menyeluruh (OWASP Top 10 checklist, rate limiting, security headers).
-  - [ ] Konfigurasi deployment produksi via Docker / VPS dengan monitoring uptime.
-- **Kriteria Selesai**: Sistem stabil, lolos audit keamanan, backup terverifikasi dapat di-restore, pipeline produksi siap.
-- **Risiko**: Kehilangan data saat server crash; mitigasi dengan pengujian skenario pemulihan cadangan data (disaster recovery test).
+  - Skema database Article, ArticleCategory, MediaGallery, SystemBackup.
+  - Admin editor berita berbasis Tiptap dengan sanitasi HTML ketat.
+  - Manajemen galeri foto kegiatan dengan optimasi gambar dan verifikasi _magic bytes_.
+  - Modul backup basis data otomatis (dump PostgreSQL terkompresi dan terenkripsi).
+  - Mekanisme pemulihan data (_restore verification drill_).
+- **Checklist Keamanan**:
+  - [ ] Seluruh input teks kaya disanitasi ketat di server (larangan script, iframe asing, handler inline).
+  - [ ] Berkas unggahan diverifikasi ekstensi, MIME, dan biner magic bytes; nama berkas diacak UUIDv4.
+  - [ ] Berkas dump backup terenkripsi dan disimpan di volume terisolasi.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Pengunggahan berkas executable (.exe/.sh/.php) yang di-rename menjadi .jpg ditolak pemeriksaan magic bytes (400).
+  - [ ] Penyisipan payload XSS `<script>alert(1)</script>` pada artikel otomatis dibersihkan oleh sanitizer.
+
+---
+
+### Fase 9: Website Publik, Transparansi & Optimasi SEO
+
+- **Tujuan**: Membuka representasi digital yayasan kepada publik Purwakarta dan calon donatur secara profesional.
+- **Ruang Lingkup**:
+  - Halaman Beranda editorial dengan program unggulan dan dokumentasi resmi.
+  - Halaman Profil Lembaga, Visi Misi, Sejarah, Legalitas, dan Struktur Pengurus (mengonsumsi data Fase 2).
+  - Halaman Berita & Galeri Kegiatan (mengonsumsi data Fase 8).
+  - Halaman Transparansi Akuntabilitas (menampilkan ringkasan laporan ISAK 35 teragregasi yang telah disetujui Ketua).
+  - Halaman Kontak & Lokasi Sekretariat Bongas, Purwakarta.
+  - Optimasi SEO, metadata OpenGraph, sitemap.xml, dan skor performa Core Web Vitals tinggi.
+- **Checklist Keamanan**:
+  - [ ] Halaman publik bersifat murni _read-only_; formulir kontak dibatasi rate limiting ketat dan captcha/honeypot.
+  - [ ] Data privat pengurus/anggota (NIK, alamat rumah pribadi, nomor rekening personal) tidak pernah diekspos ke publik.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Pengiriman formulir kontak dengan spam berulang ditolak rate limiting (429).
+  - [ ] Akses rute admin tersembunyi dari situs publik menghasilkan 401/404 tanpa kebocoran informasi stack trace.
+
+---
+
+### Fase 10: Hardening Akhir, Pentest Independen & Rilis Produksi
+
+- **Tujuan**: Menguji ketahanan sistem secara komprehensif, audit akuntansi final, dan penyebaran ke server produksi.
+- **Ruang Lingkup**:
+  - Uji penetrasi independen (_simulated grey-box penetration testing_): pengujian eskalasi hak akses, bypass maker-checker, fuzzer input.
+  - Audit rekonsiliasi akuntansi akhir bersama akuntan yayasan.
+  - Konfigurasi produksi: Docker Compose produksi, Nginx reverse proxy dengan TLS 1.3, backup cron off-site.
+  - Dokumentasi serah terima sistem dan buku panduan operasional pengurus.
+- **Checklist Keamanan**:
+  - [ ] Seluruh temuan pentest berkategori High/Medium telah diselesaikan.
+  - [ ] Audit ketergantungan `pnpm security:audit` bebas kerentanan High/Critical.
+  - [ ] Uji skenario pemulihan bencana (_disaster recovery drill_) berhasil membangkitkan data dari dump cadangan.
+- **Checklist Pengujian Kasus Negatif**:
+  - [ ] Fuzzing payload terhadap seluruh endpoint tidak menyebabkan server crash atau memory exhaustion.
+  - [ ] Pengujian kegagalan koneksi database menghasilkan respons HTTP 503 yang aman tanpa ekspos kredensial.
 
 ---
 
 ## E. Tabel Status Fase Pengerjaan
 
-| Fase       | Nama Fase                               | Status                             | ID Changelog Terkait | Keterangan                                   |
-| ---------- | --------------------------------------- | ---------------------------------- | -------------------- | -------------------------------------------- |
-| **Fase 0** | Setup Awal, Tooling, Aturan & Changelog | **Berjalan (Selesai di sesi ini)** | `[ID: 0001]`         | Fondasi arsitektur, dokumen, dan tokens siap |
-| **Fase 1** | Fondasi Auth, RBAC, Layout & Audit Log  | Belum                              | -                    | Menunggu konfirmasi pemilik proyek           |
-| **Fase 2** | Profil Dinamis, Berita & Website Publik | Belum                              | -                    | Tergantung Fase 1                            |
-| **Fase 3** | Manajemen Anggota                       | Belum                              | -                    | Tergantung Fase 1                            |
-| **Fase 4** | Keuangan Inti & Akuntansi ISAK 35       | Belum                              | -                    | Tergantung Fase 1 & 3                        |
-| **Fase 5** | Proyek & Anggaran Kegiatan              | Belum                              | -                    | Tergantung Fase 4                            |
-| **Fase 6** | Modul Perpajakan Berkonfigurasi         | Belum                              | -                    | Tergantung Fase 4                            |
-| **Fase 7** | Pelaporan ISAK 35 & Cetak               | Belum                              | -                    | Tergantung Fase 4, 5, 6                      |
-| **Fase 8** | Pengaturan, Backup, Hardening & Deploy  | Belum                              | -                    | Fase final sebelum go-live                   |
+| Fase         | Nama Fase & Ruang Lingkup                           | Status               | ID Changelog Terkait           |
+| :----------- | :-------------------------------------------------- | :------------------- | :----------------------------- |
+| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens       | **Selesai**          | `[ID: 0001]`                   |
+| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan | **Berjalan (Aktif)** | `[ID: 0002]` s.d. `[ID: 0006]` |
+| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit Log  | Belum Dimulai        | -                              |
+| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User    | Belum Dimulai        | -                              |
+| **Fase 3**   | Manajemen Anggota & Data Masking                    | Belum Dimulai        | -                              |
+| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                   | Belum Dimulai        | -                              |
+| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan             | Belum Dimulai        | -                              |
+| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                   | Belum Dimulai        | -                              |
+| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor               | Belum Dimulai        | -                              |
+| **Fase 8**   | CMS Admin & Backup/Restore Sistem                   | Belum Dimulai        | -                              |
+| **Fase 9**   | Website Publik, Transparansi & SEO                  | Belum Dimulai        | -                              |
+| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi           | Belum Dimulai        | -                              |
 
 ---
 
 ## F. Asumsi & Pertanyaan Terbuka untuk Pemilik Proyek
 
-Sebelum melanjutkan ke Fase 1 dan seterusnya, terdapat beberapa pertanyaan strategis yang memerlukan keputusan dari pemilik proyek:
-
-1. **Infrastruktur Hosting & Deployment Final**:
-   Apakah sistem akan dihosting pada VPS mandiri (misal: Ubuntu Server dengan Docker Compose + Nginx/Traefik) atau pada layanan PaaS (seperti Vercel untuk Next.js + Supabase/Neon untuk PostgreSQL)?
-2. **Kebutuhan Alur Persetujuan Transaksi (Approval Workflow)**:
-   Apakah setiap transaksi pengeluaran kas di atas nominal tertentu (misal: di atas Rp 5.000.000) memerlukan persetujuan digital bertingkat (approval) dari Ketua Yayasan sebelum berstatus `POSTED`, atau cukup bendahara langsung memposting?
-3. **Format & Kebutuhan Regulasi Bukti Potong Pajak**:
-   Apakah bukti potong yang diterbitkan sistem cukup berupa format PDF standar internal yayasan, atau harus mengikuti format khusus formulir bukti potong DJP (e-Bupot)? _(Perlu verifikasi dengan akuntan / konsultan pajak yayasan)_.
-4. **Kebijakan Publikasi Transparansi di Website Publik**:
-   Apakah masyarakat umum diizinkan melihat rekapitulasi penggunaan donasi/dana kegiatan secara terbuka di website publik, ataukah hanya pengurus internal yang dapat mengakses seluruh laporan?
-5. **Verifikasi Master Bagan Akun (Chart of Accounts)**:
-   Siapa pihak akuntan atau penasihat keuangan yayasan yang akan memvalidasi daftar kode akun baku (COA) ISAK 35 sebelum dimigrasikan ke database?
+1. **Infrastruktur Produksi Final**: Apakah deployment akhir akan menggunakan VPS mandiri (Ubuntu + Docker Compose) atau layanan cloud PaaS terkelola?
+2. **Ambang Batas Alur Persetujuan (Maker-Checker)**: Apakah seluruh pengeluaran kas wajib melalui persetujuan Ketua Yayasan, atau ada batas nominal tertentu (misal: di bawah Rp 2.000.000 cukup persetujuan Bendahara)?
+3. **Format Bukti Potong Pajak**: Apakah format PDF standar yayasan mencukupi, atau memerlukan integrasi skema e-Bupot DJP? _(Perlu verifikasi akuntan/konsultan pajak)_.
+4. **Tingkat Keterbukaan Transparansi Publik**: Apakah publik dapat melihat rincian realisasi program hingga level kuitansi, atau hanya ringkasan laporan keuangan teragregasi per semester?
+5. **Daftar Akun Baku (COA)**: Siapa nama/kontak akuntan yayasan yang akan menandatangani daftar akun ISAK 35 sebelum dimigrasikan ke database?
 
 ---
 
-## G. Manajemen Risiko & Strategi Mitigasi
+## G. Bagian Temuan & Catatan Audit
 
-1. **Risiko Kesalahan Pembukuan & Ketidakseimbangan Jurnal**:
-   - _Mitigasi_: Validasi matematis otomatis pada level Service dan skema database constraint. Transaksi yang tidak seimbang otomatis di-rollback dalam Prisma Transaction.
-2. **Risiko Kehilangan Data Finansial**:
-   - _Mitigasi_: Dilarang menggunakan hard-delete pada tabel transaksi. Penyimpanan snapshot berkala dengan jadwal otomatis ke volume terpisah.
-3. **Risiko Pelanggaran Akses / Kebocoran Data (IDOR & Privilege Escalation)**:
-   - _Mitigasi_: Pemeriksaan otorisasi dilakukan di server-side pada setiap action/API menggunakan skema RBAC berbasis permission granular.
-4. **Risiko Scope Creep (Pelebaran Lingkup)**:
-   - _Mitigasi_: Penegakan aturan ketat pada WORKING-RULES.md: Dilarang menambah fitur tanpa persetujuan revisi MASTER-PLAN.md.
-
----
-
-## H. Glosarium Singkat Istilah Teknis & Keuangan
-
-- **ISAK 35**: Interpretasi Standar Akuntansi Keuangan No. 35 tentang Penyajian Laporan Keuangan Entitas Berorientasi Nonlaba yang diterbitkan oleh Ikatan Akuntan Indonesia (IAI).
-- **Aset Neto Tanpa Pembatasan**: Sumber daya yayasan yang penggunaannya tidak dibatasi oleh persyaratan khusus dari penyumbang/donatur.
-- **Aset Neto Dengan Pembatasan**: Sumber daya yayasan yang penggunaannya dibatasi oleh pembatasan waktu atau tujuan tertentu dari pihak donatur/wakif.
-- **Penghasilan Komprehensif**: Total perubahan aset neto selama satu periode dari seluruh sumber non-pemilik (pendapatan dikurangi beban).
-- **Jurnal Umum**: Catatan kronologis pertama atas seluruh transaksi keuangan yang memuat rincian akun yang didebit dan dikredit.
-- **Void Transaksi**: Pembatalan resmi sebuah transaksi yang telah diposting dengan menandai status tidak berlaku dan mencatat alasan pembatalan tanpa menghapus rekam jejak aslinya.
-- **Tutup Buku**: Prosedur administratif penguncian catatan keuangan akhir periode untuk memastikan integritas data audit dan persiapan saldo awal periode berikutnya.
-- **Bukti Potong Pajak**: Dokumen resmi yang menyatakan bahwa pajak penghasilan telah dipotong oleh pihak pemotong (yayasan) atas pembayaran honor, sewa, atau jasa.
-
----
-
-## I. Bagian Temuan (Catatan di Luar Lingkup)
-
-Bagian ini digunakan untuk mencatat hal-hal teknis atau saran perbaikan yang ditemukan di luar lingkup tugas aktif:
-
-- _(Belum ada temuan di luar lingkup pada Fase 0)_.
+1. **[SELESAI - Remediasi Keamanan] Binding Port PostgreSQL**: Port dev di `docker-compose.yml` sebelumnya terbuka ke `0.0.0.0`; telah diperketat menjadi terikat hanya pada `127.0.0.1`.
+2. **[SELESAI - Remediasi Dependensi] Pembaruan Versi Next.js**: Next.js 15.2.1 memiliki kerentanan CVE middleware bypass dan SSR flight RCE; telah diperbarui ke versi stabil `15.5.28`.
+3. **[SELESAI - Remediasi Dependensi] Patch PostCSS**: PostCSS di-override ke `8.5.23` untuk menambal kerentanan path traversal source map.
+4. **[CATATAN ARSITEKTUR] Pengecekan Database Fase 0**: `src/lib/db.ts` saat ini menggunakan fallback socket TCP (`node:net`) untuk memverifikasi PostgreSQL karena `schema.prisma` belum memiliki model domain. Pada Fase 1, fallback ini wajib diganti dengan kueri otentikasi nyata Prisma setelah skema User/Session dimigrasikan.
+5. **[CATATAN DEPENDENSI] Pemantauan CVE DevTooling**: `pnpm audit` melaporkan kerentanan pada paket tooling pengujian dev (`vitest`, `playwright`, `zod`, `minimatch`). Pustaka ini aman diisolasi pada devDependencies dan akan terus dipantau untuk pembaruan versi stabil dengan masa rilis > 14 hari.
