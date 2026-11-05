@@ -10,7 +10,7 @@ Sistem web resmi dan panel manajemen internal untuk Yayasan Nurjaman Bongas Purw
 4. [`docs/SECURITY.md`](file:///docs/SECURITY.md) — Kebijakan keamanan siber, model ancaman OWASP ASVS L2, otorisasi server, proteksi sesi, dan penanganan data sensitif.
 5. [`docs/UI-UX-RULES.md`](file:///docs/UI-UX-RULES.md) — Desain kelembagaan bersih, palet logo resmi, tipografi, komponen bersama, dan larangan AI-slop.
 6. [`docs/ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md) — Struktur sistem terdistribusi, skema konseptual, RBAC, dan audit trail.
-7. [`docs/database/00-README.md`](file:///docs/database/00-README.md) (dan [`docs/DATABASE-SCHEMA.md`](file:///docs/DATABASE-SCHEMA.md)) — Spesifikasi teknis struktur basis data (70 tabel modular dalam 8 berkas domain).
+7. [`docs/database/00-README.md`](file:///docs/database/00-README.md) — Spesifikasi teknis struktur basis data (70 tabel modular dalam 8 berkas domain).
 8. [`docs/database/11-migration-plan.md`](file:///docs/database/11-migration-plan.md) — Panduan migrasi database sekali jalan dan portabilitas mesin Docker.
 9. [`docs/database/14-traceability.md`](file:///docs/database/14-traceability.md) — Matriks keterlacakan regulasi, evolusi skema expand-contract, dan validasi restore.
 

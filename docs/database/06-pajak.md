@@ -1,12 +1,25 @@
 # Modul 6 — Pajak (Fase 6)
 
-_Bagian dari [Spesifikasi Database](./00-README.md) · 6 tabel_
+_Bagian dari [Spesifikasi Database](./00-README.md) · 6 tabel · Sasaran: Fase 6 MASTER-PLAN_
 
-> Seluruh master tarif dan rentang waktu disimpan sebagai data konfigurasi berversi tanggal. Tidak ada tarif pajak yang di-hardcode di kode aplikasi. Seluruh modul ini **PERLU VERIFIKASI** konsultan pajak sebelum dipakai sungguhan.
+## 1. Tujuan & Sasaran Modul
+
+Modul ini mengelola profil wajib pajak nirlaba, katalog jenis pajak (PPh 21, PPh 23, PPh 4(2), PPN), master tarif berversi tanggal efektif (tanpa hardcoding), snapshot pemotongan pajak per transaksi, penerbitan bukti potong terstandarisasi, dan rekonsiliasi setoran NTPN ke kas negara. Seluruh modul ini **PERLU VERIFIKASI** konsultan pajak sebelum operasional penuh.
+
+```mermaid
+erDiagram
+    TAX_TYPES ||--|{ TAX_RATES : "schedules_rates"
+    TAX_TYPES ||--o{ TRANSACTION_TAXES : "calculates"
+    TRANSACTION_TAXES ||--o| WITHHOLDING_SLIPS : "documents"
+    TAX_TYPES ||--o{ TAX_PAYMENTS : "settles"
+    TAX_PAYMENTS ||--o{ WITHHOLDING_SLIPS : "links_remittance"
+```
 
 ---
 
-## tax_profile
+## 2. Kamus Tabel
+
+### tax_profile
 
 | Kolom                  | Tipe     | Null  | Keterangan                              |
 | :--------------------- | :------- | :---- | :-------------------------------------- |
@@ -116,6 +129,21 @@ Catatan setoran pajak ke kas negara.
 | `proof_asset_id`   | uuid     | Ya    | FK → media_assets (bukti setor BPN)      |
 | `status`           | enum     | Tidak | PLANNED, PAID                            |
 | `notes`            | text     | Ya    | Catatan                                  |
+
+---
+
+## 3. Aturan Database vs Aplikasi & Siklus Hidup Data
+
+1. **Aturan Database**:
+   - `tax_profile` adalah entitas _singleton_ ber-constraint `CHECK (id = 1)`.
+   - `tax_rates`: Mencegah rentang tanggal tarif tumpang tindih untuk satu jenis pajak via constraint `EXCLUDE USING gist (tax_type_id WITH =, daterange(effective_from, effective_to) WITH &&)`.
+   - `transaction_taxes.rate_snapshot`: Tarif disalin permanen sebagai snapshot angka numerik agar perubahan tarif di masa depan tidak mengubah histori transaksi lampau.
+2. **Aturan Aplikasi**:
+   - Nilai pembulatan nominal pajak mengikuti konfigurasi `rounding_mode` pada `tax_profile`.
+   - Penomoran bukti potong (`withholding_slips.slip_no`) dikelola via `number_sequences` ber-lock transaksi.
+3. **Siklus Hidup Data**:
+   - Bukti potong berstatus `ISSUED` tidak dapat dihapus (hanya `CANCELLED`).
+   - Penyetoran pajak ke kas negara mencatat kode billing, tanggal setor, dan NTPN resmi.
 
 ---
 

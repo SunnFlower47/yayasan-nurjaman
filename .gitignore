@@ -24,6 +24,7 @@
 /prisma/*.sqlite
 dump.sql
 *.sql
+!docs/database/sql-snippets/*.sql
 *.dump
 *.sql.gz
 /backups
