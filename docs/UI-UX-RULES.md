@@ -62,7 +62,7 @@ Palet warna diturunkan secara presisi dari file logo resmi yayasan melalui sampl
 ### 4. Matriks Kepatuhan Kontras Minimal WCAG AA
 
 | Pasangan Warna                      | Nilai Hex              | Rasio Kontras | Status Kepatuhan |
-| ----------------------------------- | ---------------------- | ------------- | ---------------- |
+| :---------------------------------- | :--------------------- | :------------ | :--------------- |
 | Teks Normal Utama di atas Putih     | `#1c1917` di `#ffffff` | **14.8 : 1**  | Lulus AAA        |
 | Teks Sekunder (Muted) di atas Putih | `#78716c` di `#ffffff` | **4.60 : 1**  | Lulus AA         |
 | Tombol Hijau Primer Accessible      | `#ffffff` di `#1b9b4f` | **4.54 : 1**  | Lulus AA         |
@@ -195,7 +195,23 @@ Palet warna diturunkan secara presisi dari file logo resmi yayasan melalui sampl
 
 ---
 
-## M. Checklist Review Antarmuka (Ya/Tidak)
+## M. Pustaka Komponen Antarmuka Bersama (`src/components/shared/`)
+
+Untuk menjamin konsistensi visual dan menghindari duplikasi kode (_DRY_), komponen komposit berikut wajib digunakan di seluruh modul:
+
+| Komponen            | Berkas               | Peran & Kontrak Interface Utama                                                                                                        |
+| :------------------ | :------------------- | :------------------------------------------------------------------------------------------------------------------------------------- |
+| **`DataTable`**     | `data-table.tsx`     | Tabel administratif terstandarisasi dengan sorting, paginasi terikat URL/server, filter kolom, dan status loading/empty.               |
+| **`PageHeader`**    | `page-header.tsx`    | Blok tajuk seragam di atas halaman admin: judul halaman, breadcrumb navigasi, subjudul, dan slot tombol aksi (_action CTA_).           |
+| **`ConfirmDialog`** | `confirm-dialog.tsx` | Dialog modal konfirmasi untuk aksi berbahaya (void, hapus, tutup buku) yang secara spesifik menyebutkan nama entitas target.           |
+| **`MoneyInput`**    | `money-input.tsx`    | Input Rupiah khusus yang memformat tampilan ribuan secara instan (`Rp 1.000.000`) dan mengembalikan nilai integer murni ke form state. |
+| **`EmptyState`**    | `empty-state.tsx`    | Visual placeholder saat kueri data bernilai nol/kosong, dilengkapi ikon Lucide, teks penjelasan, dan tombol pembuatan data baru.       |
+| **`StatusBadge`**   | `status-badge.tsx`   | Lencana status semantik bertipe aman: `DRAFT` (amber), `POSTED` / `ACTIVE` (hijau), `VOID` / `INACTIVE` (merah), `INFO` (biru).        |
+| **`FormField`**     | `form-field.tsx`     | Pembungkus formulir terstandar yang mengintegrasikan label teks, indikator wajib (`*`), kontrol input, dan pesan galat Zod inline.     |
+
+---
+
+## N. Checklist Review Antarmuka (Ya/Tidak)
 
 Sebelum suatu tugas UI dinyatakan selesai, lakukan verifikasi mandiri berikut:
 

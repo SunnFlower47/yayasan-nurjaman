@@ -9,16 +9,18 @@ Dokumen ini mendefinisikan standar teknis, alur operasional, dan pedoman kepatuh
 ## A. Alur Kerja (Workflow)
 
 1. **Membaca Dokumen Sebelum Mulai**:
-   Setiap sesi atau tugas baru dimulai dengan membaca urutan dokumen: [`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) → [`WORKING-RULES.md`](file:///docs/WORKING-RULES.md) → [`UI-UX-RULES.md`](file:///docs/UI-UX-RULES.md) → [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md).
-2. **Satu Fase/Tugas dalam Satu Waktu**:
+   Setiap sesi atau tugas baru dimulai dengan membaca urutan dokumen: [`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) → [`WORKING-RULES.md`](file:///docs/WORKING-RULES.md) → [`CODE-STANDARDS.md`](file:///docs/CODE-STANDARDS.md) → [`SECURITY.md`](file:///docs/SECURITY.md) → [`UI-UX-RULES.md`](file:///docs/UI-UX-RULES.md) → [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md).
+2. **Prioritas Alur: Panel Admin Utama Dahulu, Situs Publik Terakhir**:
+   Sistem memprioritaskan penyelesaian fondasi administratif, manajemen anggota, tata kelola keuangan ISAK 35, proyek, pajak, dan CMS internal terlebih dahulu (Fase 1 hingga Fase 8) sebelum membangun situs web publik (Fase 9). Hal ini memastikan situs publik mengonsumsi data riil yang telah terkelola dengan baik.
+3. **Satu Fase/Tugas dalam Satu Waktu**:
    Pengerjaan dilakukan secara sekuensial berdasarkan roadmap fase pada [`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md). Setelah seluruh kriteria selesai terpenuhi, pengembang/agent **wajib berhenti**, memberikan laporan akhir sesuai format bagian J, dan menunggu konfirmasi sebelum melangkah ke fase berikutnya.
-3. **Penanganan Ambiguitas**:
+4. **Penanganan Ambiguitas**:
    - **Ambiguitas Berdampak Besar** (skema entitas database, aturan akuntansi, regulasi perpajakan, model izin keamanan): **Wajib bertanya terlebih dahulu** kepada pemilik proyek. Jangan berasumsi.
    - **Ambiguitas Kecil** (penamaan utilitas internal, tata letak sekunder non-kritis): Ambil keputusan logis yang paling konservatif, lalu dokumentasikan secara transparan pada [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md) dan entri changelog.
-4. **Disiplin Lingkup (Scope Discipline)**:
+5. **Disiplin Lingkup (Scope Discipline)**:
    - Kerjakan **hanya** yang diminta pada ruang lingkup tugas aktif.
    - **Dilarang melakukan refactoring "sekalian"**, menata ulang modul lain, atau menambahkan fitur di luar lingkup.
-   - Jika menemukan cacat kode, celah potensial, atau peluang optimasi di luar tugas aktif, catat temuan tersebut di bagian **"Temuan"** pada [`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md). Jangan langsung dikerjakan.
+   - Jika menemukan cacat kode, celah potensial, atau peluang optimasi di luar tugas aktif, catat temuan tersebut di bagian **"Temuan & Pertanyaan Terbuka"** pada [`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md). Jangan langsung dikerjakan.
 
 ---
 
@@ -31,7 +33,7 @@ Sistem pencatatan perubahan berpegang pada panduan [`changelogs/README.md`](file
 3. **Penamaan File**: `NNNN-YYYY-MM-DD-slug.md` (misal: `0001-2026-11-04-setup-fondasi-proyek.md`). Dibuat menggunakan `pnpm changelog:new "judul"`.
 4. **Commit Message**: Wajib menyertakan ID changelog terkait, misal: `feat(finance): implementasi jurnal umum [ID: 0012]`.
 5. **Penegakan Otomatis (Husky Pre-commit)**:
-   Git hook secara otomatis memblokir commit jika ada perubahan pada `src/`, `prisma/`, `scripts/`, atau konfigurasi root tanpa menyertakan file entri di `changelogs/`. Bypass darurat `SKIP_CHANGELOG_CHECK=1` hanya diizinkan untuk kegagalan fatal mendesak dan penggunaannya wajib dipertanggungjawabkan pada entri berikutnya.
+   Git hook secara otomatis memblokir commit jika ada perubahan pada `src/`, `prisma/`, `scripts/`, `docs/`, `.github/`, atau konfigurasi root tanpa menyertakan file entri di `changelogs/`, jika terdapat rahasia bocor via `scan-secrets.mjs`, atau jika terjadi pelanggaran layer via `check-layers.mjs`.
 
 ---
 
@@ -47,29 +49,31 @@ Sistem pencatatan perubahan berpegang pada panduan [`changelogs/README.md`](file
    Gunakan struktur baku: `<type>(<scope>): <deskripsi singkat> [ID: NNNN]`.
    Tipe yang valid: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, `perf`, `build`, `ci`.
 3. **Commit Atomik**: Setiap commit menyelesaikan satu unit pekerjaan yang koheren.
-4. **Proteksi File Sensitif**: Dilarang keras melakukan commit terhadap `.env`, credentials, secret keys, dump SQL, database binary, atau berkas unggahan publik (`/public/uploads`).
+4. **Proteksi File Sensitif**: Dilarang keras melakukan commit terhadap `.env`, credentials, secret keys, dump SQL, database binary, atau berkas unggahan publik.
 
 ---
 
-## D. Standar Kode & Kualitas
+## D. Standar Kode, Kualitas & Batas Ukuran
 
-1. **TypeScript Strict**:
-   - `noUncheckedIndexedAccess: true` wajib aktif.
-   - **Dilarang menggunakan `any`**. Jika kondisi terpaksa menggunakan generic type atau unknown, sertakan komentar penjelasan alasan teknisnya.
-   - Dilarang menggunakan non-null assertion operator (`!`) sembarangan. Gunakan optional chaining (`?.`) dan nullish coalescing (`??`) atau validasi eksplisit.
-2. **Arsitektur Berlapis per Modul (`src/modules/<domain>/`)**:
-   - **Route / Server Action** (`actions/` atau route handlers): Hanya menerima request, mengecek sesi/izin awal, memanggil service, dan mengembalikan respon.
-   - **Service Layer** (`services/`): Tempat beradanya seluruh logika bisnis, kalkulasi keuangan, validasi proses, pemanggilan audit log, dan orkestrasi transaksi DB.
-   - **Repository Layer** (`repositories/`): Mengabstraksi seluruh akses Prisma/database. Tidak boleh ada logika bisnis di layer ini.
-   - **UI Components** (`components/`): Bersifat presentasional murni. **Dilarang keras memanggil query Prisma langsung dari komponen UI.**
+Sesuai dengan ketentuan rinci pada [`docs/CODE-STANDARDS.md`](file:///docs/CODE-STANDARDS.md):
+
+1. **Batas Ukuran yang Ditegakkan Linter**:
+   - Berkas sumber: maksimal 250 baris (error di 300 baris).
+   - Fungsi / Metode: maksimal 50 baris; kompleksitas siklomatis maksimal 10; parameter maksimal 4.
+   - Komponen React: maksimal 150 baris.
+   - 1 berkas hanya mengekspor 1 komponen utama.
+2. **Arsitektur Berlapis Bersih (`src/modules/<domain>/`)**:
+   - **Route / Server Action** (`actions/` atau route handlers): Tipis, hanya otentikasi → otorisasi → validasi Zod → panggil service → kembalikan hasil bertipe.
+   - **Service Layer** (`services/`): Logika bisnis, kalkulasi finansial, transaksi DB, dan orkestrasi. Bebas dari ketergantungan objek HTTP web.
+   - **Repository Layer** (`repositories/`): Satu-satunya layer yang mengakses basis data Prisma.
+   - **UI Components** (`components/`): Presentasional murni. **Dilarang keras memanggil query Prisma atau repositori langsung dari komponen UI.**
+   - **Batas Antar-Modul**: Komunikasi lintas modul HANYA melalui `src/modules/<domain>/index.ts`. Dilarang keras melakukan deep import.
 3. **Validasi Batas Sistem (Zod Validation)**:
-   Setiap data yang masuk dari luar sistem (request payload, query string, parameter route, form input, parsing file eksternal) **wajib divalidasi dengan skema Zod** di server sebelum diproses oleh layer service.
-4. **Penanganan Error Terpusat**:
-   - Error ditangani eksplisit menggunakan kelas turunan `AppError` dari [`src/lib/errors.ts`](file:///src/lib/errors.ts).
-   - Pesan error untuk pengguna wajib menggunakan Bahasa Indonesia yang sopan, ramah, dan membantu pemecahan masalah tanpa menyalahkan pengguna.
-   - Detail teknis, error code mendalam, dan stack trace **hanya dicatat pada log server**, tidak boleh bocor ke client demi keamanan.
-5. **Anti Magic String / Magic Number**:
-   Seluruh nilai konstanta bisnis, batas nilai, dan string status wajib didefinisikan dalam constant enum atau diambil dari konfigurasi environment (`src/lib/env.ts`) atau tabel pengaturan basis data.
+   Setiap data eksternal wajib divalidasi dengan skema Zod di server sebelum diproses oleh layer service.
+4. **Nol Kode Mati & Nol `console.log`**:
+   Wajib menggunakan logger terstruktur. `TODO` wajib merujuk ke nomor fase `MASTER-PLAN.md`.
+5. **Penanganan Error Terpusat**:
+   - Menggunakan kelas `AppError` dari [`src/lib/errors.ts`](file:///src/lib/errors.ts) dengan kode galat terstruktur.
 
 ---
 
@@ -78,55 +82,53 @@ Sistem pencatatan perubahan berpegang pada panduan [`changelogs/README.md`](file
 1. **Hanya Melalui Prisma Migration**:
    - Gunakan `pnpm db:migrate` (`prisma migrate dev`).
    - **Dilarang keras menggunakan `prisma db push`** pada lingkungan pengembangan bersama atau produksi.
-   - File migrasi yang sudah pernah diaplikasikan dan di-commit **tidak boleh diubah atau dihapus**. Perubahan skema wajib dibuat melalui migrasi baru.
+   - File migrasi yang sudah pernah diaplikasikan dan di-commit **tidak boleh diubah atau dihapus**.
 2. **Penyimpanan Nilai Keuangan (Anti-Float)**:
    - **Dilarang keras menyimpan nilai uang dalam tipe float atau double!**
-   - Nilai uang disimpan dalam **integer Rupiah terkecil** menggunakan tipe data `BigInt` (atau `Decimal(15, 2)` untuk kepatuhan kalkulasi presisi tinggi) sesuai ketetapan arsitektur.
+   - Nilai uang disimpan dalam **integer Rupiah terkecil** menggunakan tipe data `BigInt` (atau `Decimal(15, 2)`).
 3. **Audit Jejak Waktu & Soft Delete**:
    - Seluruh tabel wajib memiliki kolom `created_at` dan `updated_at`.
-   - Data keuangan (jurnal, transaksi, rincian biaya, bukti potong pajak, donasi) **tidak pernah dihapus fisik (hard delete)** demi integritas audit hukum. Pembatalan dilakukan melalui mekanisme `status: void` atau jurnal koreksi pembalik.
+   - Data keuangan tidak pernah dihapus fisik (hard delete). Pembatalan dilakukan via mekanisme `status: void` atau jurnal pembalik penyesuaian.
 
 ---
 
 ## F. Invarian Akuntansi (Prinsip Sakral Tanpa Kompromi)
 
-Aturan berikut bersifat mutlak dan tidak boleh dilanggar dalam skenario apa pun:
-
 1. **Keseimbangan Jurnal Ganda**:
-   Setiap transaksi jurnal keuangan wajib memiliki total Debit yang persis sama dengan total Kredit:
+   Total Debit WAJIB persis sama dengan total Kredit:
    $$\sum \text{Debit} = \sum \text{Kredit}$$
    Jika tidak seimbang, sistem wajib menolak transaksi pada layer service sebelum menyentuh database.
 2. **Kekekalan Transaksi Posted (Immutability)**:
    Transaksi keuangan dengan status `POSTED` **tidak dapat diubah, diedit, atau dihapus**.
-   Koreksi atas kesalahan transaksi hanya dapat dilakukan dengan membuat transaksi pembatalan (`VOID`) dan/atau menerbitkan jurnal pembalik penyesuaian.
 3. **Penutupan Buku (Closed Period Lock)**:
-   Periode akuntansi yang telah berstatus `CLOSED` (Tutup Buku) terkunci secara permanen. Tidak boleh ada transaksi jurnal baru yang diposting ke dalam tanggal periode tersebut.
+   Periode akuntansi yang telah berstatus `CLOSED` (Tutup Buku) terkunci permanen.
 4. **Tarif Pajak Berversi**:
-   Tarif pemotongan pajak (PPh Pasal 21, PPh Pasal 23, PPh Final Pasal 4 ayat 2, PPN) **tidak boleh di-hardcode** dalam kode sumber aplikasi. Tarif wajib dibaca dari master data perpajakan dengan batas tanggal berlaku efektif (`effective_date`).
+   Tarif pemotongan pajak (PPh 21, PPh 23, PPh Final 4(2), PPN) **tidak boleh di-hardcode**. Tarif wajib dibaca dari master data dengan tanggal efektif (`effective_date`).
 5. **Jejak Audit Mutlak**:
-   Setiap mutasi data keuangan wajib menghasilkan catatan jejak audit otomatis (`audit_logs`) yang merekam: siapa (`user_id`), kapan (`timestamp`), aksi apa (`event`), data sebelum (`old_values`), dan data sesudah (`new_values`).
+   Setiap mutasi data keuangan wajib menghasilkan catatan jejak audit otomatis (`audit_logs`) append-only.
 
 ---
 
 ## G. Keamanan (Security Checklist per Perubahan)
 
-Setiap penambahan atau modifikasi kode wajib memenuhi checklist keamanan berikut:
+Sesuai dengan ketentuan komprehensif pada [`docs/SECURITY.md`](file:///docs/SECURITY.md):
 
-1. [ ] **Otorisasi di Server**: Hak akses dan permission dicek langsung di server/action, bukan hanya mengandalkan logika penyembunyian tombol di antarmuka UI.
-2. [ ] **Proteksi IDOR (Insecure Direct Object Reference)**: Setiap pengambilan atau pembaruan resource berbasis ID wajib memverifikasi kepemilikan atau hak otoritas pengguna terhadap resource tersebut.
-3. [ ] **Nol Rahasia (Zero Secrets)**: Tidak ada token rahasia, kunci enkripsi, atau password yang tertulis di kode, repo, maupun log output server.
-4. [ ] **Sanitasi Konten**: Seluruh input teks kaya (rich text) dari editor artikel/berita wajib disanitasi menggunakan pustaka HTML sanitizer sebelum dirender untuk mencegah Cross-Site Scripting (XSS).
-5. [ ] **Validasi Berkas Unggahan**: Berkas yang diunggah wajib divalidasi MIME type asli, batas ukuran maksimal (misal: gambar maks 2MB, PDF maks 10MB), serta nama berkas di-hash/di-rename secara acak untuk mencegah eksekusi skrip berbahaya.
-6. [ ] **Pencegahan Command Injection**: Dilarang mengeksekusi perintah shell dari string yang bersumber dari input pengguna.
+1. [ ] **Otorisasi di Sisi Server**: Izin (`requirePermission`) dicek langsung di server/action, bukan hanya di UI atau middleware.
+2. [ ] **Proteksi IDOR**: Setiap kueri data memverifikasi kepemilikan dan batas hak akses pengguna.
+3. [ ] **Nol Rahasia (Zero Secrets)**: Pemindaian rahasia lolos via `pnpm secrets:scan`.
+4. [ ] **Sanitasi HTML**: Seluruh masukan teks kaya disaring dengan daftar putih ketat (DOMPurify).
+5. [ ] **Validasi Berkas Unggahan**: Validasi ekstensi, MIME type, dan _magic bytes_. Nama berkas diacak dengan UUIDv4.
+6. [ ] **Pencegahan Command & SQL Injection**: Parameterized queries 100% via Prisma; dilarang shell execution dari input pengguna.
+7. [ ] **Header Keamanan & Larangan Pengindeksan Admin**: CSP nonce, HSTS, X-Frame-Options: DENY, dan X-Robots-Tag: noindex pada rute admin dan API.
 
 ---
 
 ## H. Standar Penambahan Dependensi (Third-Party Packages)
 
-1. **Prinsip Minimalis**: Dependensi baru hanya boleh ditambahkan jika benar-benar esensial dan tidak dapat diimplementasikan secara efisien dengan kode internal.
-2. **Persetujuan & Dokumentasi**: Setiap paket baru wajib dicatat nama, versi eksak, dan alasan teknisnya di changelog dan [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md).
-3. **Versi Eksak (Pinned Version)**: Dilarang menggunakan prefix range `^` atau `~` pada `package.json`. Kunci versi eksak demi stabilitas lingkungan pembangunan.
-4. **Evaluasi Keamanan & Kematangan**: Periksa reputasi maintainer, lisensi open-source (MIT/Apache 2.0/BSD), riwayat CVE, dan hindari versi yang baru saja dirilis kurang dari 7 hari tanpa riwayat pengujian publik.
+1. **Prinsip Minimalis**: Dependensi baru hanya jika esensial dan disetujui.
+2. **Versi Eksak (Pinned Version)**: Dilarang menggunakan prefix range `^` atau `~` pada `package.json`.
+3. **Jeda Rilis Minimal 14 Hari**: Dilarang memasang paket yang dirilis kurang dari 14 hari tanpa riwayat audit terbuka.
+4. **Audit Kerentanan**: Wajib menjalankan `pnpm security:audit` dan memastikan tidak ada kerentanan High atau Critical.
 
 ---
 
@@ -134,13 +136,13 @@ Setiap penambahan atau modifikasi kode wajib memenuhi checklist keamanan berikut
 
 Sebuah tugas atau fase pengerjaan dianggap **SELESAI (DONE)** hanya jika:
 
-1. `pnpm typecheck` berjalan sukses tanpa ada error tipe (`tsc --noEmit`).
-2. `pnpm lint` bersih dari warning dan error ESLint.
-3. `pnpm test` (Unit test) lulus 100%, khususnya pengujian terhadap utilitas perhitungan keuangan, pajak, dan validasi skema.
-4. Migrasi Prisma berhasil diterapkan dari basis data kosong tanpa konflik.
-5. Antarmuka UI yang dibangun telah lulus checklist review pada [`UI-UX-RULES.md`](file:///docs/UI-UX-RULES.md).
-6. Dokumen aturan ([`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) dan [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md)) telah diperbarui sesuai status terbaru.
-7. Entri changelog baru telah dibuat dan dicantumkan pada commit message.
+1. `pnpm check` berjalan sukses tanpa galat (lint, typecheck, test, format:check, check-layers).
+2. Pemindaian rahasia `pnpm secrets:scan` bersih dari temuan (0 leaked secrets).
+3. Batas ukuran berkas, fungsi, dan komponen mematuhi `CODE-STANDARDS.md`.
+4. Seluruh uji negatif keamanan (_negative test cases_: 401 unauthenticated, 403 unauthorized, 422 malformed) terverifikasi.
+5. Antarmuka UI telah lulus checklist review pada [`UI-UX-RULES.md`](file:///docs/UI-UX-RULES.md).
+6. Seluruh dokumen aturan terkait ([`MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) dan [`ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md)) telah diperbarui sesuai status terbaru.
+7. Entri changelog baru telah dibuat pada `changelogs/` dan dicantumkan pada commit message.
 
 ---
 
@@ -172,7 +174,7 @@ Catatan yang memerlukan persetujuan pemilik proyek sebelum fase berikutnya.
 
 ### 6. Rujukan Changelog
 
-ID Changelog yang mencatat perubahan ini (contoh: `[ID: 0001]`).
+ID Changelog yang mencatat perubahan ini (contoh: `[ID: 0002]`).
 ```
 
 ---
@@ -186,6 +188,8 @@ ID Changelog yang mencatat perubahan ini (contoh: `[ID: 0001]`).
 - ❌ **Dilarang**: Menghapus baris catatan keuangan secara fisik (hard delete).
 - ❌ **Dilarang**: Menjalankan `prisma db push` di luar prosedur migrasi resmi.
 - ❌ **Dilarang**: Menggunakan tipe data `any` tanpa penjelasan alasan teknis.
+- ❌ **Dilarang**: Melakukan deep import antar-folder internal modul domain lain.
+- ❌ **Dilarang**: Mengandalkan middleware saja untuk otorisasi tanpa verifikasi di server action.
 - ❌ **Dilarang**: Melakukan commit tanpa entri baru di folder `changelogs/`.
-- ❌ **Dilarang**: Menambahkan komponen dan layout berpenampilan "AI-slop" (gradient ungu-pink, ilustrasi generic, emoji icon, shadow raksasa).
+- ❌ **Dilarang**: Menambahkan komponen dan layout berpenampilan "AI-slop".
 - ❌ **Dilarang**: Melanjutkan ke fase berikutnya sebelum mendapat persetujuan laporan akhir.
