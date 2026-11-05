@@ -4,7 +4,7 @@ Sistem web resmi dan panel manajemen internal untuk Yayasan Nurjaman Bongas Purw
 
 ## Urutan Wajib Baca Dokumen (Harus Dibaca Sebelum Bertindak)
 
-1. [`docs/MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) — Rencana induk, status fase aktif, lingkup, dan daftar tugas terperinci.
+1. [`docs/MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) — Rencana induk, status fase aktif, lingkup, dan daftar tugas terperinci (rincian modular di `docs/master-plan/`).
 2. [`docs/WORKING-RULES.md`](file:///docs/WORKING-RULES.md) — Aturan kerja, alur pengerjaan, standar kode, dan invarian akuntansi.
 3. [`docs/CODE-STANDARDS.md`](file:///docs/CODE-STANDARDS.md) — Standar clean code, batas ukuran berkas/fungsi, arsitektur berlapis, dan konvensi modular.
 4. [`docs/SECURITY.md`](file:///docs/SECURITY.md) — Kebijakan keamanan siber, model ancaman OWASP ASVS L2, otorisasi server, proteksi sesi, dan penanganan data sensitif.

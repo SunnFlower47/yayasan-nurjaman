@@ -38,7 +38,8 @@ d:\PROJECT\yayasan-nurjaman/
 ├── .husky/                  # Git hook scripts (changelog, secrets, layers enforcer)
 ├── changelogs/              # Catatan riwayat perubahan NNNN (append-only)
 ├── docs/                    # Dokumen aturan, panduan & arsitektur (MASTER-PLAN, SECURITY, dll.)
-│   └── database/            # Spesifikasi modular basis data (00 s.d. 15)
+│   ├── database/            # Spesifikasi modular basis data (00 s.d. 15)
+│   └── master-plan/         # Rincian modular tiap kelompok fase (00 s.d. 06)
 ├── prisma/                  # Skema database & file migrasi
 ├── public/                  # Aset statis publik (brand, favicon)
 ├── scripts/                 # Skrip utilitas CLI (check-layers, scan-secrets, dll.)
@@ -47,16 +48,10 @@ d:\PROJECT\yayasan-nurjaman/
 │   ├── components/          # Komponen Antarmuka Bersama (ui/, shared/, layout/)
 │   ├── modules/             # Modular Domain (auth, members, finance, projects, tax, content, settings, audit, backup)
 │   ├── lib/                 # Utilitas lintas modul (env, db, format, errors)
+│   ├── middleware.ts        # Security headers, nonce-based CSP & robots tags
 │   └── styles/              # Design tokens & CSS global
 └── tests/                   # Pengujian terotomatisasi (unit/ & e2e/)
 ```
-
-│ ├── lib/ # Utilitas lintas modul (env, db, format, errors)
-│ ├── middleware.ts # Security headers, nonce-based CSP & robots tags
-│ └── styles/ # Design tokens (tokens.css) & Tailwind (globals.css)
-└── tests/ # Pengujian terstruktur (unit/ & e2e/)
-
-````
 
 ### Tanggung Jawab Lapisan per Modul Domain (`src/modules/<domain>/`)
 
@@ -102,7 +97,7 @@ sequenceDiagram
         Service-->>Action: Respon Sukses / DTO Bertipe
         Action-->>UI: Revalidate Path & Tampilkan Notifikasi Sukses
     end
-````
+```
 
 ---
 
