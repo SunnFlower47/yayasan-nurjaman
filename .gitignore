@@ -23,7 +23,11 @@
 /prisma/*.db
 /prisma/*.sqlite
 dump.sql
+*.sql
+*.dump
 *.sql.gz
+/backups
+/backups/*
 
 # Logs
 npm-debug.log*
