@@ -1,2 +1,4 @@
 node scripts/check-changelog.mjs
+node scripts/scan-secrets.mjs --staged
+node scripts/check-layers.mjs
 pnpm exec lint-staged

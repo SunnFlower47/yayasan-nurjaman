@@ -1,0 +1,68 @@
+# Contoh Konfigurasi Docker Compose untuk Produksi
+# Seluruh port database PostgreSQL terisolasi penuh di jaringan internal Docker (tanpa binding host).
+# Layanan app berjalan dengan user non-root dan batasan sumber daya ketat.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - ENCRYPTION_SECRET=${ENCRYPTION_SECRET}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    # PERHATIAN KEAMANAN: Port tidak diekspos ke host sama sekali untuk lingkungan produksi
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yayasan_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
+    volumes:
+      - yayasan_prod_pgdata:/var/lib/postgresql/data
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 2048M
+
+networks:
+  yayasan_internal:
+    driver: bridge
+    internal: false
+
+volumes:
+  yayasan_prod_pgdata:
+    name: yayasan_prod_pgdata
