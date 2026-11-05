@@ -1,0 +1,66 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-and-security:
+    name: Code Quality, Typecheck & Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://test:test@localhost:5432/test?schema=public
+      NEXTAUTH_SECRET: ci-temporary-secret-for-build-validation-32chars
+      ENCRYPTION_SECRET: ci-temporary-encryption-key-32chars-long
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 12.16.1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "pnpm"
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Scan Secrets & Leak Prevention
+        run: node scripts/scan-secrets.mjs
+
+      - name: Verify Architecture Layer Boundaries
+        run: node scripts/check-layers.mjs
+
+      - name: ESLint Check
+        run: pnpm lint
+
+      - name: TypeScript Typecheck
+        run: pnpm typecheck
+
+      - name: Unit Tests
+        run: pnpm test
+
+      - name: Prettier Format Check
+        run: pnpm format:check
+
+      - name: Generate Prisma Client (Dry Run)
+        run: pnpm prisma generate
+
+      - name: Build Next.js Application
+        run: pnpm build

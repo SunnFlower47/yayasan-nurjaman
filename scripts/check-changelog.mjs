@@ -28,9 +28,9 @@ if (stagedFiles.length === 0) {
   process.exit(0);
 }
 
-// Pola file kode atau konfigurasi yang mewajibkan adanya entri changelog
+// Pola file kode, konfigurasi, dokumen aturan, atau CI yang mewajibkan adanya entri changelog
 const codeOrConfigPattern =
-  /^(src\/|prisma\/|scripts\/|package\.json|pnpm-lock\.yaml|tsconfig\.json|eslint\.config\.mjs|next\.config\.ts|tailwind\.config\.ts|postcss\.config\.mjs|docker-compose\.yml|Dockerfile|\.env\.example|\.prettierrc|\.editorconfig)/i;
+  /^(src\/|prisma\/|scripts\/|docs\/|\.github\/|\.husky\/|package\.json|pnpm-lock\.yaml|pnpm-workspace\.yaml|tsconfig\.json|\.eslintrc\.json|eslint\.config\.mjs|next\.config\.ts|tailwind\.config\.ts|postcss\.config\.mjs|docker-compose.*\.ya?ml|Dockerfile|\.dockerignore|\.env\.example|\.prettierrc|\.editorconfig)/i;
 
 const touchesCodeOrConfig = stagedFiles.some((file) => codeOrConfigPattern.test(file));
 const touchesChangelog = stagedFiles.some(
@@ -42,14 +42,14 @@ if (touchesCodeOrConfig && !touchesChangelog) {
     "\n================================================================================"
   );
   console.error(
-    "❌ COMMIT DITOLAK: Perubahan kode/konfigurasi terdeteksi tanpa entri changelog!"
+    "❌ COMMIT DITOLAK: Perubahan kode/konfigurasi/dokumen terdeteksi tanpa entri changelog!"
   );
   console.error(
     "================================================================================"
   );
-  console.error("Berdasarkan WORKING-RULES.md:");
+  console.error("Berdasarkan WORKING-RULES.md dan AGENTS.md:");
   console.error(
-    "Setiap perubahan fitur, bugfix, refactor, config, atau DB wajib memiliki entri"
+    "Setiap perubahan fitur, bugfix, refactor, config, docs, atau DB wajib memiliki entri"
   );
   console.error("di folder changelogs/ sebelum di-commit.\n");
   console.error("File staged yang memerlukan changelog:");
