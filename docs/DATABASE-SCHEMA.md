@@ -11,16 +11,16 @@ _Draf Spesifikasi Teknis · 70 Tabel dalam 8 Modul · Panduan Pemodelan Skema Ba
 
 Setiap tabel memiliki kolom bawaan **`id`** (UUIDv7, primary key), **`created_at`** dan **`updated_at`** (`timestamptz`, UTC), kecuali ada keterangan eksplisit _append-only_, _singleton_, atau _PK komposit_.
 
-| Notasi                 | Arti & Ketentuan Teknis                                                                                                                        |
-| :--------------------- | :--------------------------------------------------------------------------------------------------------------------------------------------- |
-| **FK → tabel**         | Kunci asing (_Foreign key_). `ON DELETE` selalu eksplisit; bila tidak disebut berarti `RESTRICT`.                                              |
-| **UQ**                 | Indeks / Batasan Unik (_Unique Constraint_).                                                                                                   |
-| **SD**                 | _Soft Delete_ (memiliki kolom `deleted_at timestamptz`).                                                                                       |
-| **v**                  | Kolom `version int` untuk _optimistic locking_ (mencegah _race condition_ mutasi).                                                             |
-| **[enc]**              | Dienkripsi di level aplikasi (AES-256-GCM), disimpan sebagai `bytea` berisi key ID, nonce 12-byte, ciphertext, dan authentication tag 16-byte. |
-| **[hash]**             | Hanya nilai hash satu arah yang disimpan (Argon2id untuk sandi atau SHA-256 untuk token). Nilai teks asli tidak pernah disimpan.               |
-| **bigint**             | Satuan mata uang Rupiah utuh tanpa pecahan desimal. Dilarang tipe float.                                                                       |
-| **date / timestamptz** | `date` untuk tanggal bisnis; `timestamptz` untuk jejak waktu sistem (zona waktu UTC).                                                          |
+| Notasi                 | Arti & Ketentuan Teknis                                                                                                                                                                                                                |
+| :--------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **FK → tabel**         | Kunci asing (_Foreign key_). `ON DELETE` selalu eksplisit; bila tidak disebut berarti `RESTRICT`.                                                                                                                                      |
+| **UQ**                 | Indeks / Batasan Unik (_Unique Constraint_).                                                                                                                                                                                           |
+| **SD**                 | _Soft Delete_ (memiliki kolom `deleted_at timestamptz`).                                                                                                                                                                               |
+| **v**                  | Kolom `version int` untuk _optimistic locking_ (mencegah _race condition_ mutasi).                                                                                                                                                     |
+| **[enc]**              | Dienkripsi di level aplikasi (AES-256-GCM), disimpan sebagai `bytea` berisi key ID, nonce 12-byte, ciphertext, dan authentication tag 16-byte. Menggunakan Key Ring (`ENCRYPTION_KEYS`) untuk rotasi kunci (kunci aktif + kunci lama). |
+| **[hash]**             | Hanya nilai hash satu arah yang disimpan (Argon2id untuk sandi, SHA-256 untuk token, atau HMAC-SHA256 via `BLIND_INDEX_SECRET` untuk blind index NIK). Nilai teks asli tidak pernah disimpan.                                          |
+| **bigint**             | Satuan mata uang Rupiah utuh tanpa pecahan desimal. Dilarang tipe float.                                                                                                                                                               |
+| **date / timestamptz** | `date` untuk tanggal bisnis; `timestamptz` untuk jejak waktu sistem (zona waktu UTC).                                                                                                                                                  |
 
 Semua kolom FK otomatis diberi indeks database. Bagian bertanda **PERLU VERIFIKASI** bergantung pada aturan tata buku akuntansi ISAK 35 atau regulasi perpajakan yang wajib dikonfirmasi ke akuntan / konsultan pajak yayasan.
 
@@ -1010,6 +1010,13 @@ Model data cadangan yang dilengkapi pencatatan versi lingkungan guna validasi ko
 | `status`                | enum        | Tidak | RUNNING, SUCCESS, FAILED                                    |
 | `notes`                 | text        | Ya    | Keterangan audit pemulihan                                  |
 
+_Catatan: Prosedur Pre-Restore & Validasi Penolakan Mutlak (lihat detail di `docs/database/14-traceability.md`):_
+
+1. _Target PostgreSQL Version Check: Restore DITOLAK KERAS jika versi PostgreSQL target lebih tua daripada `postgres_version` berkas cadangan._
+2. _Schema Version Compatibility Check: Restore DITOLAK OTOMATIS jika skema target tidak kompatibel dengan `schema_version` cadangan._
+3. _Cryptographic Key Check: Restore DITOLAK KERAS jika key ring target tidak memiliki `key_id` yang cocok atau `BLIND_INDEX_SECRET` berbeda._
+4. _Snapshot Wajib: Snapshot otomatis `pre_restore_backup_id` wajib sukses dibuat sebelum pemulihan basis data dieksekusi._
+
 ### job_locks
 
 | Kolom          | Tipe        | Null  | Keterangan                                      |
@@ -1058,7 +1065,7 @@ _Tabel bertanda opsional (iuran dan impor anggota, anggota dan sumber dana proye
 2. **Fleksibilitas Penugasan Multi-Role**:
    Tabel `user_roles` mendukung satu pengguna memegang lebih dari satu peran (misal: Bendahara merangkap Penanggung Jawab Proyek).
 3. **Perlindungan NIK Anggota (Kepatuhan UU PDP No. 27/2022)**:
-   NIK disimpan terenkripsi di `nik_enc` via AES-256-GCM dan didukung `nik_blind_index` (HMAC-SHA256) untuk pencarian cepat tanpa perlu mendekripsi seluruh baris data.
+   NIK disimpan terenkripsi di `nik_enc` via AES-256-GCM menggunakan Key Ring berotasi (`key_id`) dan didukung `nik_blind_index` (HMAC-SHA256 via `BLIND_INDEX_SECRET`) untuk pencarian cepat dan deteksi duplikat tanpa perlu mendekripsi seluruh baris data.
 4. **Kalkulasi Saldo Dana Terikat Secara Runtime**:
    Saldo dana terikat (`restricted_funds`) tidak pernah disimpan sebagai angka statis; selalu dihitung dari baris jurnal pembukuan (`journal_lines`). Ini menjamin saldo laporan tidak akan pernah menyimpang dari buku besar.
 5. **Daftar Poin yang PERLU VERIFIKASI Akuntan / Konsultan Pajak**:
@@ -1068,4 +1075,4 @@ _Tabel bertanda opsional (iuran dan impor anggota, anggota dan sumber dana proye
    - Perlakuan pengakuan donasi non-kas (_in-kind donations_).
 6. **Batasan Desain yang Dikeluarkan dari Skema Database**:
    - Tidak ada integrasi e-Faktur langsung atau payment gateway real-time otomatis.
-   - Kunci enkripsi master (`ENCRYPTION_SECRET`) tidak disimpan di database, melainkan di variabel lingkungan host.
+   - Kunci enkripsi master (`ENCRYPTION_KEYS`) dan kunci blind index (`BLIND_INDEX_SECRET`) tidak disimpan di database, melainkan di variabel lingkungan host. Cadangan offsite berbasis S3-compatible diwajibkan secara mandatori melalui worker.
