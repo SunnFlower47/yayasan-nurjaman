@@ -36,12 +36,13 @@ Sistem memiliki 7 tingkatan peran dengan pemisahan tugas (_segregation of duties
 
 ---
 
-## C. Roadmap Sekuensial (11 Fase)
+## C. Roadmap Sekuensial Fase Pengembangan
 
 ```mermaid
 flowchart TD
-    F0["Fase 0: Setup & Fondasi (Selesai)"] --> F05["Fase 0.5: Pengetatan Aturan & Keamanan (Aktif)"]
-    F05 --> F1["Fase 1: Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit"]
+    F0["Fase 0: Setup & Fondasi (Selesai)"] --> F05["Fase 0.5: Pengetatan Aturan & Keamanan (Selesai)"]
+    F05 --> F07["Fase 0.7: Stack Docker Lengkap Dev & Prod (Berikutnya)"]
+    F07 --> F1["Fase 1: Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit"]
     F1 --> F2["Fase 2: Pengaturan Sistem, Profil Admin & Manajemen User"]
     F2 --> F3["Fase 3: Manajemen Anggota & Data Masking"]
     F3 --> F4["Fase 4: Keuangan Inti & Akuntansi ISAK 35"]
@@ -69,10 +70,10 @@ flowchart TD
 
 ---
 
-### Fase 0.5: Memperketat Aturan, Standar Kode & Fondasi Keamanan (Status: Aktif)
+### Fase 0.5: Memperketat Aturan, Standar Kode & Fondasi Keamanan (Status: Selesai)
 
 - **Tujuan**: Menegakkan batas kualitas kode, arsitektur berlapis, dan konfigurasi keamanan tanpa membuat fitur domain.
-- **Ruang Lingkup**:
+- **Ruang Lingkup Selesai**:
   - [x] Audit komprehensif hasil Fase 0 (inspeksi git history, port postgres 127.0.0.1, audit dependency, perbaikan CVE Next.js & PostCSS).
   - [x] Dokumen standar rekayasa: `docs/CODE-STANDARDS.md` dan `docs/SECURITY.md`.
   - [x] Pembaruan dokumen lama: `AGENTS.md`, `WORKING-RULES.md`, `MASTER-PLAN.md`, `ARCHITECTURE.md`, `UI-UX-RULES.md`.
@@ -89,6 +90,29 @@ flowchart TD
   - [x] Uji coba commit file staged dengan rahasia tiruan ditolak oleh pre-commit hook.
   - [x] Uji coba impor `@prisma/client` pada komponen UI ditolak oleh linter dan check-layers.
   - [x] Uji coba akses rute `/dev/tokens` pada mode `NODE_ENV=production` mengembalikan HTTP 404 Not Found.
+
+---
+
+### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Belum Dimulai)
+
+- **Tujuan**: Mengimplementasikan seluruh berkas orkestrasi Docker untuk lingkungan pengembangan (dev) dan produksi (prod) sesuai spesifikasi ADR-008 dan `docs/11-migration-plan.md`.
+- **Ruang Lingkup**:
+  - [ ] Implementasi berkas `docker-compose.yml` untuk development (hot reload Next.js, port postgres dev terikat 127.0.0.1).
+  - [ ] Implementasi berkas `docker-compose.prod.yml` untuk produksi (internal bridge network `yayasan_internal`, port DB & app tertutup dari host, resource limits).
+  - [ ] Konfigurasi container `reverse-proxy` (Caddy dengan otomatisasi TLS Let's Encrypt / ZeroSSL dan security headers).
+  - [ ] Konfigurasi container `migrate` sekali jalan (`prisma migrate deploy`).
+  - [ ] Konfigurasi container `backup-worker` (dengan client PostgreSQL 17, skrip backup otomatis, validasi versi, dan kredensial least privilege).
+  - [ ] Konfigurasi multi-stage `Dockerfile` dengan dukungan multi-arsitektur (`linux/amd64` dan `linux/arm64`).
+  - [ ] Uji coba simulasi pemindahan mesin (_cross-machine transfer drill_) dari lokal ke container staging.
+- **Checklist Keamanan Fase 0.7**:
+  - [ ] Port basis data dan aplikasi TIDAK dipublikasikan ke host publik di produksi (mencegah bypass firewall UFW di VPS Linux).
+  - [ ] Port 80 dan 443 hanya dipublikasikan oleh reverse proxy.
+  - [ ] Kunci rahasia dan environment variables tidak pernah dibakar ke dalam image Docker layer.
+  - [ ] Seluruh container produksi berjalan sebagai user non-root dengan opsi `no-new-privileges: true`.
+- **Checklist Pengujian Kasus Negatif Fase 0.7**:
+  - [ ] Koneksi langsung dari luar host ke port 5432 atau 3000 ditolak / unreachable.
+  - [ ] Simulasi kegagalan layanan `migrate` membatalkan deployment tanpa menghentikan container aplikasi lama.
+  - [ ] Simulasi pemulihan backup dengan versi PostgreSQL yang tidak kompatibel otomatis ditolak oleh validator worker.
 
 ---
 
@@ -269,7 +293,7 @@ flowchart TD
 - **Ruang Lingkup**:
   - Uji penetrasi independen (_simulated grey-box penetration testing_): pengujian eskalasi hak akses, bypass maker-checker, fuzzer input.
   - Audit rekonsiliasi akuntansi akhir bersama akuntan yayasan.
-  - Konfigurasi produksi: Docker Compose produksi, Nginx reverse proxy dengan TLS 1.3, backup cron off-site.
+  - Konfigurasi produksi: Docker Compose produksi, Caddy reverse proxy dengan TLS 1.3 otomatis, backup cron off-site.
   - Dokumentasi serah terima sistem dan buku panduan operasional pengurus.
 - **Checklist Keamanan**:
   - [ ] Seluruh temuan pentest berkategori High/Medium telah diselesaikan.
@@ -283,26 +307,27 @@ flowchart TD
 
 ## E. Tabel Status Fase Pengerjaan
 
-| Fase         | Nama Fase & Ruang Lingkup                           | Status               | ID Changelog Terkait           |
-| :----------- | :-------------------------------------------------- | :------------------- | :----------------------------- |
-| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens       | **Selesai**          | `[ID: 0001]`                   |
-| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan | **Berjalan (Aktif)** | `[ID: 0002]` s.d. `[ID: 0006]` |
-| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit Log  | Belum Dimulai        | -                              |
-| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User    | Belum Dimulai        | -                              |
-| **Fase 3**   | Manajemen Anggota & Data Masking                    | Belum Dimulai        | -                              |
-| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                   | Belum Dimulai        | -                              |
-| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan             | Belum Dimulai        | -                              |
-| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                   | Belum Dimulai        | -                              |
-| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor               | Belum Dimulai        | -                              |
-| **Fase 8**   | CMS Admin & Backup/Restore Sistem                   | Belum Dimulai        | -                              |
-| **Fase 9**   | Website Publik, Transparansi & SEO                  | Belum Dimulai        | -                              |
-| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi           | Belum Dimulai        | -                              |
+| Fase         | Nama Fase & Ruang Lingkup                           | Status        | ID Changelog Terkait           |
+| :----------- | :-------------------------------------------------- | :------------ | :----------------------------- |
+| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens       | **Selesai**   | `[ID: 0001]`                   |
+| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan | **Selesai**   | `[ID: 0002]` s.d. `[ID: 0006]` |
+| **Fase 0.7** | Stack Docker Lengkap (Dev dan Prod)                 | Belum Dimulai | `[ID: 0007]` (Desain)          |
+| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit Log  | Belum Dimulai | -                              |
+| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User    | Belum Dimulai | -                              |
+| **Fase 3**   | Manajemen Anggota & Data Masking                    | Belum Dimulai | -                              |
+| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                   | Belum Dimulai | -                              |
+| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan             | Belum Dimulai | -                              |
+| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                   | Belum Dimulai | -                              |
+| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor               | Belum Dimulai | -                              |
+| **Fase 8**   | CMS Admin & Backup/Restore Sistem                   | Belum Dimulai | -                              |
+| **Fase 9**   | Website Publik, Transparansi & SEO                  | Belum Dimulai | -                              |
+| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi           | Belum Dimulai | -                              |
 
 ---
 
 ## F. Asumsi & Pertanyaan Terbuka untuk Pemilik Proyek
 
-1. **Infrastruktur Produksi Final**: Apakah deployment akhir akan menggunakan VPS mandiri (Ubuntu + Docker Compose) atau layanan cloud PaaS terkelola?
+1. **Infrastruktur Produksi Final**: Apakah deployment akhir akan menggunakan VPS mandiri (Ubuntu + Docker Compose v2 + Caddy TLS otomatis) atau layanan cloud PaaS terkelola? _(Rekomendasi arsitektur: VPS mandiri Docker-first sesuai ADR-008)_.
 2. **Ambang Batas Alur Persetujuan (Maker-Checker)**: Apakah seluruh pengeluaran kas wajib melalui persetujuan Ketua Yayasan, atau ada batas nominal tertentu (misal: di bawah Rp 2.000.000 cukup persetujuan Bendahara)?
 3. **Format Bukti Potong Pajak**: Apakah format PDF standar yayasan mencukupi, atau memerlukan integrasi skema e-Bupot DJP? _(Perlu verifikasi akuntan/konsultan pajak)_.
 4. **Tingkat Keterbukaan Transparansi Publik**: Apakah publik dapat melihat rincian realisasi program hingga level kuitansi, atau hanya ringkasan laporan keuangan teragregasi per semester?

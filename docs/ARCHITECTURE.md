@@ -2,7 +2,7 @@
 
 ## Yayasan Nurjaman Bongas Purwakarta
 
-Dokumen ini menjelaskan struktur arsitektur teknis, pola rekayasa perangkat lunak, model data konseptual, sistem keamanan siber berlapis, dan keputusan arsitektur (ADR) untuk sistem digital Yayasan Nurjaman Bongas Purwakarta.
+Dokumen ini menjelaskan struktur arsitektur teknis, pola rekayasa perangkat lunak, model data konseptual, sistem keamanan siber berlapis, arsitektur Docker-first, dan keputusan arsitektur (ADR) untuk sistem digital Yayasan Nurjaman Bongas Purwakarta.
 
 ---
 
@@ -42,12 +42,13 @@ d:\PROJECT\yayasan-nurjaman/
 │   ├── README.md            # Aturan & template changelog
 │   └── 0001-*.md            # File entri berurutan NNNN
 ├── docs/                    # Dokumen aturan, panduan & arsitektur
-│   ├── MASTER-PLAN.md       # Rencana induk sekuensial (11 fase)
+│   ├── MASTER-PLAN.md       # Rencana induk sekuensial fase
 │   ├── WORKING-RULES.md     # Aturan kerja & invarian akuntansi
 │   ├── CODE-STANDARDS.md    # Batas ukuran kode & clean code
 │   ├── SECURITY.md          # Standar keamanan OWASP ASVS L2
 │   ├── UI-UX-RULES.md       # Desain kelembagaan & komponen bersama
-│   └── ARCHITECTURE.md      # Spesifikasi arsitektur teknis & ADR
+│   ├── ARCHITECTURE.md      # Spesifikasi arsitektur teknis & ADR
+│   └── 11-migration-plan.md # Panduan migrasi database & pindah mesin Docker
 ├── prisma/                  # Skema database & file migrasi
 │   └── schema.prisma
 ├── public/                  # Aset statis publik
@@ -72,7 +73,6 @@ d:\PROJECT\yayasan-nurjaman/
 │   │   ├── auth/            # Autentikasi, 2FA, sesi, akun pengurus
 │   │   ├── members/         # Manajemen anggota, pengurus, relawan & data masking
 │   │   ├── finance/         # Inti akuntansi: COA, Jurnal Umum, Buku Kas, ISAK 35
-│   │   │   └── services/    # Subfolder service (journal/, reporting/, period/)
 │   │   ├── projects/        # Proyek/kegiatan sosial dan pagu anggaran
 │   │   ├── tax/             # Konfigurasi tarif pajak dinamis & bukti potong
 │   │   ├── content/         # CMS profil yayasan, berita, artikel & galeri
@@ -195,14 +195,83 @@ erDiagram
 
 ---
 
-## 6. Catatan Keputusan Arsitektur (Architectural Decision Records / ADR)
+## 6. Arsitektur Docker-First & Ekosistem Layanan
 
-| ID ADR      | Tanggal    | Topik Keputusan             | Pilihan yang Ditetapkan & Alasan Teknis                                                                                                                                                                  |
-| :---------- | :--------- | :-------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **ADR-001** | 2026-11-04 | **Arsitektur Aplikasi**     | **Next.js App Router + Modular Monolith**. Menggabungkan kemudahan pemeliharaan monolit dengan isolasi batas domain yang tegas di `src/modules/`.                                                        |
-| **ADR-002** | 2026-11-04 | **Manajemen Basis Data**    | **PostgreSQL + Prisma Migration Only**. Menolak keras `prisma db push` demi jejak migrasi skema yang terlacak dan reproduktif.                                                                           |
-| **ADR-003** | 2026-11-05 | **Prioritas Roadmap**       | **Admin Panel Terlebih Dahulu, Situs Publik Terakhir**. Membangun fondasi internal, data anggota, keuangan ISAK 35, proyek, dan CMS sebelum membuka wajah publik.                                        |
-| **ADR-004** | 2026-11-05 | **Model Otorisasi Aman**    | **Defense in Depth Server-Side Authorization**. Middleware hanya untuk redirect; pengecekan izin mutlak dilakukan di Server Action (`requirePermission`) guna menangkal potensi middleware route bypass. |
-| **ADR-005** | 2026-11-04 | **Presisi Finansial**       | **BigInt / Decimal Integer Rupiah**. Dilarang menggunakan tipe float. Invarian debit = kredit diverifikasi sebelum transaksi ditulis ke basis data.                                                      |
-| **ADR-006** | 2026-11-04 | **Konfigurasi Tarif Pajak** | **Master Data Berversi Tanggal Efektif**. Tarif pajak (PPh 21, 23, Final) tidak di-hardcode di kode, melainkan dibaca dinamis dari tabel berversi tanggal.                                               |
-| **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**   | **Nonce-based CSP & Strict HTTP Headers**. Menerapkan CSP dengan nonce per request, HSTS 2 tahun, X-Frame-Options: DENY, dan X-Robots-Tag noindex untuk rute admin/API.                                  |
+Sistem dirancang dengan pendekatan **Docker-First**: seluruh subsistem aplikasi, basis data, proxy, migrasi, dan backup dapat dijalankan secara terisolasi dan dipindahkan lintas mesin (dari server VPS produksi ke laptop pengembang dan sebaliknya) murni menggunakan perintah modern `docker compose` (v2).
+
+### 6.1 Topologi Layanan (_Service Catalog_)
+
+| Layanan             | Peran & Tanggung Jawab                                 | Mode Eksekusi                                       | Paparan Port ke Host                    |
+| :------------------ | :----------------------------------------------------- | :-------------------------------------------------- | :-------------------------------------- |
+| **`app`**           | Aplikasi Next.js App Router (SSR, API, Server Actions) | Daemon (`restart: unless-stopped`)                  | **TIDAK ADA** (Hanya jaringan internal) |
+| **`postgres`**      | Database PostgreSQL 17 Alpine                          | Daemon (`restart: unless-stopped`)                  | **TIDAK ADA** (Hanya jaringan internal) |
+| **`reverse-proxy`** | Caddy / Nginx dengan TLS otomatis & SSL offloading     | Daemon (`restart: unless-stopped`)                  | **Port 80 (HTTP) & 443 (HTTPS)**        |
+| **`migrate`**       | Eksekusi `prisma migrate deploy` sebelum deploy app    | Sekali jalan (_ephemeral one-off_, `restart: "no"`) | **TIDAK ADA** (Hanya jaringan internal) |
+| **`backup-worker`** | Worker cadangan terjadwal & drill pemulihan data       | Daemon berkala (`restart: unless-stopped`)          | **TIDAK ADA** (Hanya jaringan internal) |
+
+### 6.2 Volume Bernama (_Named Volumes_)
+
+Persistensi data dipisahkan dari container lifecycle menggunakan volume bernama Docker:
+
+- **`postgres_data`**: Menyimpan direktori data mentah PostgreSQL (`/var/lib/postgresql/data`).
+- **`uploads_private`**: Berkas privat sensitif (bukti kuitansi kas, bukti potong pajak, scan KTA, lampiran keuangan).
+- **`uploads_public`**: Berkas publik (foto dokumentasi kegiatan, galeri berita, logo yayasan, avatar pengurus).
+
+### 6.3 Isolasi Jaringan & Catatan Keamanan Kritis Firewall (UFW Bypass)
+
+> [!CAUTION] **Bahaya Docker Mem-Bypass Firewall UFW di Linux/VPS**
+> Pada sistem operasi Linux (Ubuntu/Debian) di server VPS, Docker Daemon memanipulasi aturan `iptables` secara langsung pada rantai `PREROUTING`. Perilaku ini menyebabkan port container yang dipublikasikan via deklarasi `ports:` pada Docker Compose **secara otomatis melewati (bypass) aturan firewall `ufw`**.
+> **ATURAN MUTLAK ARSITEKTUR**:
+>
+> 1. Layanan `postgres` dan `app` **DILARANG KERAS** mempublikasikan port ke host (`ports:` dilarang). Keduanya HANYA terhubung ke bridge network terisolasi `yayasan_internal`.
+> 2. **HANYA** layanan `reverse-proxy` yang diizinkan mempublikasikan port `80` dan `443` ke host publik. Seluruh akses trafik masuk wajib disaring oleh reverse proxy.
+
+```mermaid
+flowchart LR
+    Internet["Internet Publik"] -->|Port 80/443| RP["reverse-proxy (Caddy/TLS)"]
+    subgraph Host["Host Mesin / VPS"]
+        subgraph InternalNet["Docker Network: yayasan_internal (Tanpa Akses Port Langsung)"]
+            RP -->|HTTP internal:3000| App["app (Next.js Node)"]
+            Migrate["migrate (One-Off)"] -->|TCP:5432| DB["postgres (PostgreSQL 17)"]
+            App -->|TCP:5432| DB
+            Worker["backup-worker"] -->|TCP:5432 (Least Privilege)| DB
+        end
+        DB --> VolDB[("postgres_data")]
+        App --> VolPriv[("uploads_private")]
+        App --> VolPub[("uploads_public")]
+    end
+```
+
+### 6.4 Pengelolaan Environment Variables & Rahasia (_Zero Baked Secrets_)
+
+1. Kunci rahasia (`DATABASE_URL`, `POSTGRES_PASSWORD`, `ENCRYPTION_SECRET`, `NEXTAUTH_SECRET`) **DILARANG KERAS DIBAKAR** (_never baked_) ke dalam Dockerfile atau image layer.
+2. Seluruh rahasia disuntikkan secara dinamis saat runtime melalui environment host terproteksi (berkas `.env` dengan izin berkas ketat `chmod 600`).
+
+### 6.5 Pemeriksaan Kesehatan (_Healthcheck_) & Versi Image Eksak
+
+- Seluruh container pendukung wajib memiliki `healthcheck`:
+  - `postgres`: `test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]`
+  - `app`: `test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]`
+- Tag image Docker wajib dipin pada versi eksak (misal: `postgres:17.2-alpine`, `node:22.13.0-alpine`, `caddy:2.9.1-alpine`). Dilarang menggunakan tag dinamis `:latest`.
+
+### 6.6 Dukungan Multi-Arsitektur (_Multi-Platform Build_)
+
+Image yang dibangun untuk aplikasi dan worker wajib mendukung arsitektur ganda via Docker Buildx:
+
+- `linux/amd64` (Server VPS x86_64 produksi)
+- `linux/arm64` (Laptop Apple Silicon M1/M2/M3 dan laptop ARM pengembang)
+
+---
+
+## 7. Catatan Keputusan Arsitektur (Architectural Decision Records / ADR)
+
+| ID ADR      | Tanggal    | Topik Keputusan                           | Pilihan yang Ditetapkan & Alasan Teknis                                                                                                                                                                                                                                                                           |
+| :---------- | :--------- | :---------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ADR-001** | 2026-11-04 | **Arsitektur Aplikasi**                   | **Next.js App Router + Modular Monolith**. Menggabungkan kemudahan pemeliharaan monolit dengan isolasi batas domain yang tegas di `src/modules/`.                                                                                                                                                                 |
+| **ADR-002** | 2026-11-04 | **Manajemen Basis Data**                  | **PostgreSQL + Prisma Migration Only**. Menolak keras `prisma db push` demi jejak migrasi skema yang terlacak dan reproduktif.                                                                                                                                                                                    |
+| **ADR-003** | 2026-11-05 | **Prioritas Roadmap**                     | **Admin Panel Terlebih Dahulu, Situs Publik Terakhir**. Membangun fondasi internal, data anggota, keuangan ISAK 35, proyek, dan CMS sebelum membuka wajah publik.                                                                                                                                                 |
+| **ADR-004** | 2026-11-05 | **Model Otorisasi Aman**                  | **Defense in Depth Server-Side Authorization**. Middleware hanya untuk redirect; pengecekan izin mutlak dilakukan di Server Action (`requirePermission`) guna menangkal potensi middleware route bypass.                                                                                                          |
+| **ADR-005** | 2026-11-04 | **Presisi Finansial**                     | **BigInt / Decimal Integer Rupiah**. Dilarang menggunakan tipe float. Invarian debit = kredit diverifikasi sebelum transaksi ditulis ke basis data.                                                                                                                                                               |
+| **ADR-006** | 2026-11-04 | **Konfigurasi Tarif Pajak**               | **Master Data Berversi Tanggal Efektif**. Tarif pajak (PPh 21, 23, Final) tidak di-hardcode di kode, melainkan dibaca dinamis dari tabel berversi tanggal.                                                                                                                                                        |
+| **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**                 | **Nonce-based CSP & Strict HTTP Headers**. Menerapkan CSP dengan nonce per request, HSTS 2 tahun, X-Frame-Options: DENY, dan X-Robots-Tag noindex untuk rute admin/API.                                                                                                                                           |
+| **ADR-008** | 2026-11-05 | **Ekosistem Docker-First & Portabilitas** | **Docker Compose v2 Multi-Service & Multi-Arch**. Menstandarisasi layanan (`app`, `postgres`, `reverse-proxy`, `migrate`, `backup-worker`) dengan isolasi jaringan internal tanpa port binding ke DB/app guna menangkal UFW bypass di VPS, volume bernama, serta portabilitas total laptop $\leftrightarrow$ VPS. |

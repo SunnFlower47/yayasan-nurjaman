@@ -100,31 +100,11 @@ Seluruh Server Action dan API Route ditutup secara default. Akses hanya diberika
 
 > [!WARNING] **Peringatan Keamanan Next.js Middleware**
 > Berdasarkan CVE-2024-34351 dan karakteristik Next.js App Router, middleware Next.js berjalan di Edge Runtime yang mengandalkan pencocokan rute (_URL pattern matching_). Middleware dapat terlewati (_bypass_) jika penyerang memanipulasi rute internal atau header RSC (`RSC: 1`).
-> **ATURAN MUTLAK**: Next.js Middleware HANYA digunakan untuk kenyamanan pengalaman pengguna (pengalihan otomatis/redirect). Seluruh verifikasi izin otoritatif WAJIB dilakukan di sisi server pada setiap Server Action atau Route Handler:
-
-```typescript
-// CONTOH KODE RESMI OTORISASI SERVER ACTION
-export async function voidJournalEntryAction(input: VoidJournalInput) {
-  // 1. Verifikasi Autentikasi
-  const session = await requireUser();
-
-  // 2. Verifikasi Izin Spesifik di Server
-  await requirePermission(session.userId, "finance:journal:void");
-
-  // 3. Validasi Masukan
-  const validated = VoidJournalSchema.parse(input);
-
-  // 4. Eksekusi Layanan
-  return await journalService.voidTransaction(validated, session.userId);
-}
-```
+> **ATURAN MUTLAK**: Next.js Middleware HANYA digunakan untuk kenyamanan pengalaman pengguna (pengalihan otomatis/redirect). Seluruh verifikasi izin otoritatif WAJIB dilakukan di sisi server pada setiap Server Action atau Route Handler.
 
 ### 3.3 Pencegahan IDOR (_Insecure Direct Object Reference_)
 
-Pencarian dan pembaruan data pada layer repository wajib selalu menyertakan batasan kepemilikan atau lingkup organisasi:
-
-- Dilarang: `prisma.member.findUnique({ where: { id: memberId } })` tanpa validasi kepemilikan.
-- Wajib: Kueri yang memvalidasi bahwa entitas yang diminta berada dalam ruang lingkup yang berhak diakses oleh pengguna.
+Pencarian dan pembaruan data pada layer repository wajib selalu menyertakan batasan kepemilikan atau lingkup organisasi.
 
 ### 3.4 Pemisahan Kewenangan (_Segregation of Duties / Maker-Checker_)
 
@@ -145,15 +125,11 @@ Untuk mencegah _fraud_ finansial:
    - Dilarang keras melakukan konkatenasi string SQL pada `prisma.$queryRawUnsafe`.
 3. **Pencegahan Cross-Site Scripting (XSS)**:
    - Teks biasa otomatis di-escape oleh React engine.
-   - Konten HTML kaya dari editor Tiptap (berita, artikel publik) wajib disaring di sisi server menggunakan pustaka pembersih HTML dengan daftar putih ketat (_allowlist_ tag aman: `p`, `strong`, `em`, `ul`, `ol`, `li`, `blockquote`, `h2`, `h3`; larangan atribut `onerror`, `onload`, tag `script`, `iframe`, `object`).
+   - Konten HTML kaya dari editor Tiptap (berita, artikel publik) wajib disaring di sisi server menggunakan pustaka pembersih HTML dengan daftar putih ketat.
 4. **Pencegahan Shell Injection**:
    - Dilarang memanggil `child_process.exec` atau `eval` menggunakan masukan dari pengguna.
 5. **Mitigasi SSRF (_Server-Side Request Forgery_)**:
-   - Panggilan HTTP keluar (misalnya webhook atau notifikasi) hanya boleh diarahkan ke domain yang telah terdaftar dalam daftar putih (_whitelist_).
-   - Seluruh IP privat dilarang keras diakses oleh server aplikasi:
-     - `127.0.0.0/8` (Loopback)
-     - `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` (Private Intranet)
-     - `169.254.169.254` (Cloud Instance Metadata Service)
+   - Panggilan HTTP keluar hanya boleh diarahkan ke domain yang telah terdaftar dalam daftar putih (_whitelist_). Seluruh rentang IP privat dilarang keras.
 
 ---
 
@@ -172,30 +148,32 @@ X-Permitted-Cross-Domain-Policies: none
 X-DNS-Prefetch-Control: off
 ```
 
-### Larangan Pengindeksan Panel Admin & API
+### 5.1 Isolasi Jaringan Docker & Mitigasi Risiko UFW Bypass di Linux/VPS
 
-Untuk mencegah paparan rute internal pada mesin pencari (_search engines_):
+> [!CAUTION] **Bahaya Docker Mem-Bypass Firewall UFW di Linux/VPS**
+> Pada server Linux di VPS, Docker Daemon memanipulasi rantai `PREROUTING` pada `iptables` secara otomatis. Perilaku ini menyebabkan port container yang dipublikasikan via deklarasi `ports:` pada Docker Compose **secara otomatis melewati (bypass) aturan firewall `ufw`**.
+> **KONTROL KEAMANAN MUTLAK**:
+>
+> 1. Layanan `postgres` dan `app` **DILARANG KERAS MEMPUBLIKASIKAN PORT KE HOST**. Keduanya hanya boleh berada di dalam jaringan bridge internal Docker terisolasi (`yayasan_internal`).
+> 2. **HANYA** layanan `reverse-proxy` yang diizinkan mempublikasikan port ke host publik: port `80` (HTTP) dan port `443` (HTTPS).
 
-- Header respons HTTP untuk seluruh rute `/admin/*` dan `/api/*` menyematkan:
-  `X-Robots-Tag: noindex, nofollow, noarchive`
-- Berkas `robots.txt` melarang secara eksplisit pengindeksan direktori `/admin/` dan `/api/`.
+### 5.2 Larangan Pengindeksan Panel Admin & API
+
+Header respons HTTP untuk seluruh rute `/admin/*` dan `/api/*` menyematkan:
+`X-Robots-Tag: noindex, nofollow, noarchive`, didukung pembatasan `robots.txt`.
 
 ---
 
 ## 6. Keamanan Pengunggahan Berkas (_File Upload Security_)
 
-Pengunggahan berkas (bukti kas, kuitansi, foto program, foto identitas anggota) wajib mematuhi standar berikut:
-
 1. **Validasi Tiga Lapis**:
-   - Pemeriksaan ekstensi nama berkas (hanya `.jpg`, `.jpeg`, `.png`, `.webp`, `.pdf`).
-   - Pemeriksaan header MIME type dari klien.
-   - **Verifikasi Magic Bytes (Tanda Tangan Biner)** di sisi server menggunakan _file signature buffer_ untuk memastikan berkas bukan kode eksekusi yang disamarkan.
+   - Ekstensi berkas (`.jpg`, `.jpeg`, `.png`, `.webp`, `.pdf`).
+   - Header MIME type klien.
+   - **Verifikasi Magic Bytes (Tanda Tangan Biner)** di sisi server via _file signature buffer_.
 2. **Pembersihan Nama Berkas**:
-   - Nama berkas asli dibuang untuk mencegah serangan _path traversal_ atau eksekusi skrip.
-   - Nama berkas baru dihasilkan menggunakan `crypto.randomUUID()`.
+   - Nama asli dibuang untuk mencegah _path traversal_; nama baru dihasilkan via `crypto.randomUUID()`.
 3. **Penyimpanan Terisolasi**:
-   - Berkas diunggah di luar _web root_ atau disimpan dalam storage privat terisolasi.
-   - Berkas dokumen sensitif (kuitansi keuangan, identitas) hanya dapat diakses melalui URL bertanda tangan (_presigned URL_) berbatas waktu kedaluwarsa maksimal 15 menit.
+   - Berkas diunggah di luar _web root_ atau bucket privat via _presigned URL_ (berlaku maks 15 menit).
 4. **Batas Ukuran**:
    - Foto profil & logo: maksimal 2 MB.
    - Dokumen lampiran keuangan & laporan: maksimal 10 MB.
@@ -206,41 +184,32 @@ Pengunggahan berkas (bukti kas, kuitansi, foto program, foto identitas anggota) 
 
 ### 7.1 Enkripsi Data Pribadi saat Istirahat (_Encryption at Rest_)
 
-- Kolom basis data yang memuat identitas kependudukan (NIK anggota) wajib dienkripsi di level aplikasi sebelum disimpan ke PostgreSQL menggunakan algoritma **AES-256-GCM**.
-- Kunci enkripsi aplikasi disimpan dalam variabel lingkungan `ENCRYPTION_SECRET` (32 bytes) dan tidak boleh tersimpan di dalam repositori kode.
+- Kolom basis data yang memuat identitas kependudukan (NIK anggota), nomor rekening bank, dan rahasia TOTP 2FA wajib dienkripsi di level aplikasi sebelum disimpan ke PostgreSQL menggunakan **AES-256-GCM**.
+- Kunci enkripsi aplikasi disimpan dalam variabel lingkungan `ENCRYPTION_SECRET` (32 bytes).
+- **Invarian Migrasi Mesin**: Saat memindahkan sistem antar-mesin (VPS $\leftrightarrow$ Laptop), nilai `ENCRYPTION_SECRET` pada `.env` **WAJIB DISALIN PERSIS SAMA**. Tanpa kunci master yang identik, data terenkripsi tidak akan bisa didekripsi selamanya (_permanent data loss_).
 
 ### 7.2 Penyamaran Data Antarmuka (_Data Masking_)
 
-- Pada tabel data dan tampilan administratif umum, data NIK ditampilkan tersamar: `3201************`.
-- Data nomor rekening bank ditampilkan sebagian: `****5678`.
-- Pembukaan data asli (_unmasking_) memerlukan hak akses khusus dan dicatat dalam audit log.
+- Pada tabel data dan tampilan administratif umum, NIK ditampilkan tersamar: `3201************`.
+- Nomor rekening bank ditampilkan sebagian: `****5678`.
 
 ### 7.3 Jejak Audit Nirubah (_Immutable Audit Trail_)
 
-- Setiap transaksi mutasi finansial, perubahan hak akses, login pejabat, dan perubahan konfigurasi wajib tercatat di tabel `audit_logs`.
-- Struktur catatan audit:
-  - `actorId`: ID pengguna pelaku tindakan.
-  - `action`: Jenis tindakan (`CREATE`, `UPDATE`, `VOID`, `LOGIN`, `EXPORT`).
-  - `resource`: Entitas sasaran (`JOURNAL_ENTRY`, `USER_ROLE`, `TAX_CONFIG`).
-  - `resourceId`: Kunci primer entitas yang diubah.
-  - `diff`: Objek JSON yang memuat nilai sebelum (_before_) dan sesudah (_after_).
-  - `ipAddress`: Alamat IP klien (diminimalkan jika diperlukan regulasi).
-  - `userAgent`: Pengenal browser/perangkat.
-  - `timestamp`: Waktu pencatatan berbasis UTC.
-- **Integritas Log**: Tabel `audit_logs` bersifat _append-only_. Dilarang menyediakan API atau fungsionalitas untuk mengedit atau menghapus rekaman log audit.
+- Setiap transaksi mutasi finansial, perubahan izin, login, dan konfigurasi tercatat di tabel `audit_logs`.
+- Tabel bersifat _append-only_; dilarang menyediakan API untuk mengedit atau menghapus log audit.
 
 ---
 
 ## 8. Manajemen Kunci Rahasia & Keamanan Rantai Pasok
 
-1. **Nol Kunci Rahasia di Repositori**:
-   - File `.env`, `.env.local`, file sertifikat `.pem`, dan kunci privat dilarang keras di-commit ke Git.
-   - Skrip pemindaian otomatis `pnpm secrets:scan` terintegrasi dalam git hook `pre-commit` untuk menolak commit yang memuat pola kredensial atau _private key_.
+1. **Nol Kunci Rahasia di Repositori & Docker Image**:
+   - File `.env`, `.pem`, dan rahasia dilarang di-commit ke Git.
+   - Kunci rahasia **TIDAK PERNAH DIBAKAR** (_never baked_) ke dalam image layer Docker.
+   - Git pre-commit hook otomatis memindai rahasia via `pnpm secrets:scan`.
 2. **Pemasangan Dependensi Aman**:
-   - Lingkungan CI/CD dan kontainer Docker wajib memasang dependensi dengan bendera `--frozen-lockfile` untuk menjamin integritas paket yang sama persis dengan `pnpm-lock.yaml`.
-3. **Penyusutan Dependensi & Jeda Rilis (_Release Cooldown_)**:
-   - Dilarang memasang pustaka baru yang belum memiliki reputasi mapan atau berumur rilis kurang dari **14 hari** untuk menghindari serangan _malicious package injection_.
-   - Seluruh dependensi wajib dipin pada versi eksak (tanpa tanda kurva `^` atau tilde `~`).
+   - CI/CD dan Docker wajib memasang dependensi dengan bendera `--frozen-lockfile`.
+3. **Jeda Rilis Minimal 14 Hari**:
+   - Dilarang memasang paket baru yang dirilis kurang dari 14 hari tanpa riwayat pengujian publik.
 
 ---
 
@@ -248,19 +217,13 @@ Pengunggahan berkas (bukti kas, kuitansi, foto program, foto identitas anggota) 
 
 ### 9.1 Gerbang Keamanan per Fase (_Per-Phase Verification Gate_)
 
-Setiap fase pengembangan tidak boleh dinyatakan selesai sebelum memenuhi kriteria keamanan berikut:
+Setiap fase wajib lolos:
 
-- [ ] Pemeriksaan kerentanan otomatis: `pnpm audit` bebas dari kerentanan _Critical_ atau _High_.
+- [ ] Pemeriksaan kerentanan otomatis: `pnpm audit` bebas kerentanan Critical / High.
 - [ ] Pemindaian rahasia: `pnpm secrets:scan` bersih tanpa temuan.
-- [ ] Pengujian kasus negatif (_negative security test cases_): pengujian rute dengan payload tanpa otentikasi, otorisasi salah peran, dan masukan malformasi menghasilkan galat yang semestinya (HTTP 401, 403, 422).
+- [ ] Pengujian kasus negatif (_negative security test cases_): pengujian rute menghasilkan HTTP 401, 403, 422.
 - [ ] Header keamanan aktif dan terverifikasi via uji E2E Playwright.
 
 ### 9.2 Milestone Uji Penetrasi Pre-Go-Live (Fase 10)
 
-Sebelum sistem diluncurkan untuk operasional nyata yayasan, wajib dilakukan pengujian penetrasi independen (_simulated grey-box penetration testing_) yang menguji:
-
-1. Skenario eskalasi hak akses antar role (Anggota -> Staf -> Bendahara -> Super Admin).
-2. Skenario bypass Maker-Checker pada permohonan pencairan kas.
-3. Uji injeksi dan fuzzing masukan formulir.
-4. Uji kebocoran data NIK pada respons API dan log sistem.
-5. Uji ketahanan DoS dan keandalan sistem pemulihan cadangan (_disaster recovery_).
+Sebelum sistem diluncurkan untuk operasional nyata, wajib dilakukan uji penetrasi independen (_simulated grey-box penetration testing_): eskalasi hak akses, bypass maker-checker, fuzzing masukan, dan pengujian disaster recovery.
