@@ -1064,7 +1064,7 @@ _Tabel bertanda opsional (iuran dan impor anggota, anggota dan sumber dana proye
    `financial_transactions` adalah dokumen bisnis pengguna tempat persetujuan (_approval_), lampiran nota, dan pemotongan pajak melekat. Jurnal umum (`journal_entries` dan `journal_lines`) baru dibentuk saat transaksi berstatus `POSTED`. Hal ini memastikan jurnal akuntansi tetap suci dan berpasangan sempurna tanpa tercemar status draf atau penolakan.
 2. **Fleksibilitas Penugasan Multi-Role**:
    Tabel `user_roles` mendukung satu pengguna memegang lebih dari satu peran (misal: Bendahara merangkap Penanggung Jawab Proyek).
-3. **Perlindungan NIK Anggota (Kepatuhan UU PDP No. 27/2022)**:
+3. **Perlindungan NIK Anggota (rujukan, PERLU VERIFIKASI: UU PDP No. 27/2022)**:
    NIK disimpan terenkripsi di `nik_enc` via AES-256-GCM menggunakan Key Ring berotasi (`key_id`) dan didukung `nik_blind_index` (HMAC-SHA256 via `BLIND_INDEX_SECRET`) untuk pencarian cepat dan deteksi duplikat tanpa perlu mendekripsi seluruh baris data.
 4. **Kalkulasi Saldo Dana Terikat Secara Runtime**:
    Saldo dana terikat (`restricted_funds`) tidak pernah disimpan sebagai angka statis; selalu dihitung dari baris jurnal pembukuan (`journal_lines`). Ini menjamin saldo laporan tidak akan pernah menyimpang dari buku besar.
