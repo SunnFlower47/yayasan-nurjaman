@@ -15,7 +15,7 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 ### 1.1 Aset Kritis yang Dilindungi
 
 1. **Catatan Keuangan & Akuntansi (ISAK 35)**: Jurnal umum, saldo kas/bank, laporan realisasi dana terikat dan tidak terikat. Manipulasi data keuangan dapat memicu pelanggaran hukum yayasan.
-2. **Data Pribadi (PII)**: Nomor Induk Kependudukan (NIK), alamat, nomor telepon, dan data keluarga anggota yayasan. Wajib mematuhi UU Pelindungan Data Pribadi (UU PDP).
+2. **Data Pribadi (PII)**: Nomor Induk Kependudukan (NIK), alamat, nomor telepon, dan data keluarga anggota yayasan (rujukan, PERLU VERIFIKASI: UU Pelindungan Data Pribadi / UU PDP).
 3. **Data Perpajakan**: Konfigurasi tarif pajak, riwayat pemotongan PPh 21/23, dan arsip bukti potong.
 4. **Kredensial & Kunci Sesi**: Kata sandi pengurus, kunci TOTP 2FA, token otentikasi, dan secret key lingkungan.
 5. **Jejak Audit (_Audit Trail_)**: Log aktivitas sistem sebagai bukti integritas yang tidak boleh dapat diubah (_tamper-proof_).

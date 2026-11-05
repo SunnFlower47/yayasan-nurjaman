@@ -93,6 +93,21 @@ flowchart TD
 
 ---
 
+### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Selesai)
+
+- **Tujuan**: Menetapkan spesifikasi teknis lengkap 70 tabel basis data dalam 8 modul domain, rekonsiliasi draf pemilik, matriks keterlacakan, strategi migrasi expand-contract, dan arsitektur Docker-first tanpa membuat skema Prisma.
+- **Ruang Lingkup Selesai**:
+  - [x] Spesifikasi Docker-first & ADR-008: multi-service, isolasi jaringan internal, UFW bypass mitigation.
+  - [x] Spesifikasi migrasi & ADR-009: expand-contract non-breaking, snapshot pre-deploy, portabilitas mesin di `docs/database/11-migration-plan.md`.
+  - [x] Matriks keterlacakan regulasi & validasi restore di `docs/database/14-traceability.md`.
+  - [x] Rekonsiliasi draf pemilik & perbandingan tabel-demi-tabel di `docs/database/15-diff-vs-draf.md`.
+  - [x] Spesifikasi modular 70 tabel dalam 8 berkas domain di `docs/database/00-README.md` s.d. `08-sistem.md`.
+  - [x] Resolusi tabrakan penamaan akun (`chart_of_accounts`) dan pemetaan tabel auth (ADR-010).
+  - [x] Koreksi klaim kepatuhan hukum ke "rujukan, PERLU VERIFIKASI".
+  - [x] Entri changelog terpisah (`0007` s.d. `0011`).
+
+---
+
 ### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Belum Dimulai)
 
 - **Tujuan**: Mengimplementasikan seluruh berkas orkestrasi Docker untuk lingkungan pengembangan (dev) dan produksi (prod) sesuai spesifikasi ADR-008, ADR-009, `docs/database/11-migration-plan.md`, dan `docs/database/14-traceability.md`.

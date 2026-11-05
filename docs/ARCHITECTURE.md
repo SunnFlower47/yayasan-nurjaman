@@ -48,10 +48,11 @@ d:\PROJECT\yayasan-nurjaman/
 │   ├── SECURITY.md          # Standar keamanan OWASP ASVS L2
 │   ├── UI-UX-RULES.md       # Desain kelembagaan & komponen bersama
 │   ├── ARCHITECTURE.md      # Spesifikasi arsitektur teknis & ADR
-│   ├── DATABASE-SCHEMA.md   # Spesifikasi teknis struktur 70 tabel basis data
-│   └── database/            # Panduan teknis & matriks keterlacakan basis data
-│       ├── 11-migration-plan.md  # Panduan migrasi database & pindah mesin Docker
-│       └── 14-traceability.md    # Matriks keterlacakan regulasi & validasi restore
+│   └── database/            # Spesifikasi 70 tabel basis data & panduan teknis
+│       ├── 00-README.md     # Indeks spesifikasi database & legenda notasi
+│       ├── 11-migration-plan.md  # Panduan migrasi database & portabilitas Docker
+│       ├── 14-traceability.md    # Matriks keterlacakan regulasi & validasi restore
+│       └── 15-diff-vs-draf.md    # Rekonsiliasi draf pemilik vs spesifikasi database
 ├── prisma/                  # Skema database & file migrasi
 │   └── schema.prisma
 ├── public/                  # Aset statis publik
@@ -264,23 +265,13 @@ flowchart LR
 
 ### 6.6 Dukungan Multi-Arsitektur (_Multi-Platform Build_)
 
-Image yang dibangun untuk aplikasi dan worker wajib mendukung arsitektur ganda via Docker Buildx:
-
-- `linux/amd64` (Server VPS x86_64 produksi)
-- `linux/arm64` (Laptop Apple Silicon M1/M2/M3 dan laptop ARM pengembang)
+Image yang dibangun untuk aplikasi dan worker wajib mendukung arsitektur ganda via Docker Buildx: `linux/amd64` (Server VPS x86_64 produksi) dan `linux/arm64` (Laptop Apple Silicon / ARM pengembang).
 
 ### 6.7 Kebijakan Toleransi Restart, Henti Singkat & Pola Migrasi Expand-Contract
 
-1. **Koreksi Realitas: Henti Singkat Terukur (_Brief Interruption_), Bukan Zero-Downtime**:
-   Proses restart container aplikasi Next.js pada arsitektur single-host Docker membutuhkan jeda waktu booting runtime Node.js dan healthcheck (2–5 detik). Selama interval singkat ini terjadi _brief interruption_. Sistem secara sadar menerima kompromi ini demi kesederhanaan arsitektur tanpa kompleksitas cluster Kubernetes/Swarm.
-2. **Pola Evolusi Skema: Expand lalu Contract**:
-   Setiap perubahan skema database wajib kompatibel dengan versi kode aplikasi yang sedang berjalan:
-   - **Expand**: Buat tabel baru atau kolom baru nullable / dengan nilai default.
-   - **Backfill**: Migrasi data lama ke struktur baru jika diperlukan.
-   - **Contract**: Buat migrasi susulan untuk menghapus kolom usang setelah seluruh container menjalankan kode baru.
-3. **Penanganan Kegagalan Migrasi**:
-   - **Jalur Normal**: Memperbaiki migrasi dan menandai status skema via `prisma migrate resolve` (`--applied` atau `--rolled-back`).
-   - **Pilihan Terakhir (_Last Resort_)**: Pemulihan dari snapshot cadangan `PRE_DEPLOY` hanya ditempuh jika terjadi kegagalan DDL destruktif yang tidak dapat diselesaikan secara logis.
+1. **Henti Singkat Terukur (_Brief Interruption_)**: Restart container aplikasi Next.js membutuhkan jeda booting 2–5 detik. Sistem menerima kompromi henti singkat terukur ini (bukan zero-downtime) demi kesederhanaan single-host.
+2. **Pola Evolusi Skema Expand-Contract**: Perubahan skema database wajib kompatibel dengan app berjalan: buat kolom baru nullable/default (Expand), migrasi data (Backfill), lalu hapus kolom usang di rilis berikutnya (Contract).
+3. **Penanganan Kegagalan Migrasi**: Jalur normal adalah perbaikan skema dan rekonsiliasi via `prisma migrate resolve`. Pemulihan dari snapshot `PRE_DEPLOY` adalah pilihan terakhir (_last resort_) untuk kegagalan DDL destruktif.
 
 ---
 
@@ -297,3 +288,4 @@ Image yang dibangun untuk aplikasi dan worker wajib mendukung arsitektur ganda v
 | **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**                                            | **Nonce-based CSP & Strict HTTP Headers**. Menerapkan CSP dengan nonce per request, HSTS 2 tahun, X-Frame-Options: DENY, dan X-Robots-Tag noindex untuk rute admin/API.                                                                                                                                                                                                                                                                                                                  |
 | **ADR-008** | 2026-11-05 | **Ekosistem Docker-First & Portabilitas**                            | **Docker Compose v2 Multi-Service & Multi-Arch**. Menstandarisasi layanan (`app`, `postgres`, `reverse-proxy`, `migrate`, `backup-worker`) dengan isolasi jaringan internal tanpa port binding ke DB/app guna menangkal UFW bypass di VPS, volume bernama, serta portabilitas total laptop $\leftrightarrow$ VPS.                                                                                                                                                                        |
 | **ADR-009** | 2026-11-05 | **Manajemen Kriptografi Multi-Kunci & Pola Migrasi Expand-Contract** | **Key Ring + Key ID, Blind Index HMAC Terpisah, dan Strategi Migrasi Expand-Contract**. Seluruh kunci kriptografi wajib direplikasi saat pemindahan mesin. Restart aplikasi diakui memiliki henti singkat terukur (bukan zero-downtime), migrasi skema wajib non-breaking (expand-contract), kegagalan ditangani dengan `prisma migrate resolve` (snapshot restore sebagai pilihan terakhir), cadangan offsite berbasis S3 diwajibkan, dan Caddy ditetapkan sebagai reverse proxy resmi. |
+| **ADR-010** | 2026-11-06 | **Resolusi Tabrakan Nama Entitas & Pemetaan Tabel Auth**             | **Bagan Akun `chart_of_accounts`, Kas/Bank `cash_bank_accounts`, Tabel Auth Domain Mandiri**. Menghindari tabrakan nama entitas generic `accounts`. Tabel auth domain (`users`, `sessions`, `two_factor_secrets`, `two_factor_recovery_codes`, `password_reset_tokens`) dirancang mandiri dan dipetakan ke library auth via custom adapter tanpa mengubah konvensi skema domain inti yayasan.                                                                                            |
