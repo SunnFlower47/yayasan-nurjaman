@@ -152,3 +152,17 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 014 s.d. 022 untuk
   Image varian Alpine memiliki ukuran biner lebih kecil (~150MB lebih hemat disk). Namun Alpine menggunakan musl libc yang memiliki keterbatasan penanganan locale (id_ID.UTF-8) dan rentan terhadap korupsi indeks B-tree saat terjadi pembaruan versi libc di container. Varian Debian menggunakan GNU C Library (glibc) standar industri dengan stabilitas collation string teks yang teruji, kompatibilitas biner mutlak identik antara server PostgreSQL dan perkakas `pg_dump`/`pg_restore` di worker cadangan, serta stabilitas masa panjang dari rilis resmi Debian Bookworm.
 - **Rekomendasi Tegas**: Menggunakan **`postgres:17.2-bookworm` (Official Debian-based)** untuk seluruh container basis data dan worker pencadangan produksi. Varian Alpine hanya diperbolehkan pada lingkungan pengembangan lokal sederhana.
 - **Status**: **DIPUTUSKAN**.
+
+---
+
+### ADR-025: Pemilihan Restic untuk Enkripsi Cadangan Terautentikasi & Dukungan S3 Bawaan
+
+- **Konteks**: Mekanisme pencadangan sebelumnya menggunakan `openssl enc -aes-256-cbc` yang tidak terautentikasi (unauthenticated encryption) sehingga tidak dapat mendeteksi manipulasi biner (ciphertext tampering) secara kriptografis, serta ketergantungan checksum plaintext `manifest.json` yang rentan diubah jika berada di media penyimpanan yang sama.
+- **Opsi**:
+  1. OpenSSL manual dengan HMAC signing terpisah.
+  2. Utilitas `age` encryption.
+  3. **`restic`** backup framework modern berbasis Go.
+- **Trade-off**:
+  OpenSSL manual membutuhkan script verifikasi rumit dan rawan kesalahan implementasi. `age` sangat baik untuk enkripsi berkas individual namun membutuhkan perkakas tambahan untuk snapshot, retensi berkala, dan sinkronisasi S3. `restic` menyediakan enkripsi terautentikasi bawaan kelas industri (AES-256-CTR + Poly1305 MAC), integritas biner anti-tampering yang divalidasi via `restic check`, deduplikasi cerdas, manajemen snapshot, kebijakan retensi otomatis (`restic forget --prune`), serta dukungan bawaan transfer offsite ke bucket S3-compatible (Cloudflare R2, AWS S3, MinIO) tanpa dependensi eksternal tambahan.
+- **Rekomendasi Tegas**: Menggunakan **Restic (`restic`)** sebagai mesin cadangan terautentikasi baku di container `backup-worker`. Kunci enkripsi repositori (`RESTIC_PASSWORD`) disuntikkan secara dinamis saat runtime dari variabel lingkungan, tidak pernah dibakar ke dalam image maupun disimpan di dalam database.
+- **Status**: **DIPUTUSKAN**.

@@ -101,3 +101,15 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 001 s.d. 010 untuk
 - **Trade-off**: Nama generik `accounts` menimbulkan kebingungan fatal antara domain akuntansi dan autentikasi. Pembakuan nama spesifik mengeliminasi ambiguitas semantik.
 - **Rekomendasi Tegas**: Membakukan nama bagan akun menjadi **`chart_of_accounts`**, rekening kas/bank menjadi **`cash_bank_accounts`**, dan merancang tabel identitas domain secara terisolasi.
 - **Status**: **DIPUTUSKAN**.
+
+---
+
+### ADR-024: Penetapan Kepemilikan Tunggal Header Keamanan (Aplikasi vs Reverse Proxy)
+
+- **Konteks**: Di lingkungan produksi, reverse proxy Caddy sempat menambahkan header `Content-Security-Policy: frame-ancestors 'none'` dan `Strict-Transport-Security` statis 1 tahun yang menimpa CSP dinamis berbasis nonce per-request dan HSTS 2 tahun (`max-age=63072000`) dari middleware Next.js (ADR-007).
+- **Opsi**: (1) Caddy dan aplikasi sama-sama menyetel header (rawan konflik/duplikasi), (2) Caddy mengelola seluruh header (kehilangan nonce dinamis aplikasi), (3) Pemisahan kepemilikan tunggal tegas berdasarkan jalur rute (_single owner per path_).
+- **Trade-off**: Opsi 1 menyebabkan CSP tertimpa atau invalid karena duplikasi header. Opsi 2 melarang nonce dinamis untuk script inline Next.js. Opsi 3 memberikan batas tanggung jawab yang jernih dan deterministik.
+- **Rekomendasi Tegas**: Menetapkan **Kepemilikan Tunggal Header Keamanan**:
+  1. **Jalur Aplikasi (`/` dan `/api/*`)**: Dikelola secara berdaulat 100% oleh middleware Next.js (`src/middleware.ts`). Caddy dilarang keras menambahkan atau menimpa header `Content-Security-Policy`, `Strict-Transport-Security`, `X-Frame-Options`, `X-Content-Type-Options`, maupun `Referrer-Policy` pada respon aplikasi.
+  2. **Jalur Statis Publik (`/uploads/*`)**: Dikelola langsung oleh Caddy dengan isolasi ketat: `X-Content-Type-Options: nosniff`, `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox`, dan `Content-Disposition: attachment` untuk berkas non-gambar.
+- **Status**: **DIPUTUSKAN**.

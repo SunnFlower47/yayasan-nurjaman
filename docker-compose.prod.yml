@@ -2,11 +2,13 @@
 # Docker Compose untuk Lingkungan Produksi (Production)
 # Yayasan Nurjaman Bongas Purwakarta
 # ==============================================================================
-# Keamanan Ketat:
+# Keamanan Ketat & Prinsip Hak Minimal (Least Privilege):
 # 1. HANYA layanan reverse-proxy (Caddy) yang mempublikasikan port 80/443.
-# 2. Database postgres dan aplikasi app TIDAK mempublikasikan port ke host publik.
-# 3. uploads_private TIDAK PERNAH dimount ke reverse-proxy Caddy.
-# 4. uploads_public dimount sebagai read-only (:ro) ke Caddy.
+# 2. Database dan app TIDAK mempublikasikan port ke host publik.
+# 3. Kredensial database dipisah per role (db_migrator, db_app, db_backup).
+# 4. Layanan backup-worker memasang uploads secara READ-ONLY (:ro).
+# 5. Layanan restore-worker berjalan sebagai jalur terpisah (one-off).
+# 6. Tidak ada kata sandi bernilai tetap di berkas compose ini.
 # ==============================================================================
 
 services:
@@ -48,7 +50,7 @@ services:
       - NODE_ENV=production
       - PORT=3000
       - HOSTNAME=0.0.0.0
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-yayasan_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
+      - DATABASE_URL=postgresql://${DB_APP_USER:-db_app}:${DB_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
       - AUTH_SECRET=${AUTH_SECRET}
       - ENCRYPTION_KEY_ACTIVE_ID=${ENCRYPTION_KEY_ACTIVE_ID}
@@ -76,17 +78,24 @@ services:
     container_name: yayasan_postgres_prod
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-yayasan_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD wajib disetel}
+      DB_MIGRATOR_USER: ${DB_MIGRATOR_USER:-db_migrator}
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:?DB_MIGRATOR_PASSWORD wajib disetel}
+      DB_APP_USER: ${DB_APP_USER:-db_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:?DB_APP_PASSWORD wajib disetel}
+      DB_BACKUP_USER: ${DB_BACKUP_USER:-db_backup}
+      DB_BACKUP_PASSWORD: ${DB_BACKUP_PASSWORD:?DB_BACKUP_PASSWORD wajib disetel}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     networks:
       - yayasan_internal
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yayasan_user} -d ${POSTGRES_DB:-yayasan_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-yayasan_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -99,7 +108,7 @@ services:
     container_name: yayasan_migrate_prod
     restart: "no"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-yayasan_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
+      - DATABASE_URL=postgresql://${DB_MIGRATOR_USER:-db_migrator}:${DB_MIGRATOR_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
     depends_on:
       postgres:
         condition: service_healthy
@@ -117,16 +126,44 @@ services:
     environment:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
-      POSTGRES_USER: ${POSTGRES_USER:-yayasan_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_USER: ${DB_BACKUP_USER:-db_backup}
+      POSTGRES_PASSWORD: ${DB_BACKUP_PASSWORD:?DB_BACKUP_PASSWORD wajib disetel}
       POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
-      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:-${BACKUP_ENCRYPTION_KEY:?Kunci backup wajib disetel}}
+      BACKUP_CRON_SCHEDULE: ${BACKUP_CRON_SCHEDULE:-0 2 * * *}
+      RETENTION_DAYS: ${RETENTION_DAYS:-7}
+      RETENTION_KEEP: ${RETENTION_KEEP:-10}
       APP_VERSION: ${APP_VERSION:-0.1.0}
       S3_ENDPOINT: ${S3_ENDPOINT:-}
       S3_BUCKET: ${S3_BUCKET:-}
       S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
       S3_SECRET_KEY: ${S3_SECRET_KEY:-}
       S3_REGION: ${S3_REGION:-}
+    volumes:
+      - backups_data:/backups
+      - uploads_private:/var/data/uploads_private:ro
+      - uploads_public:/var/data/uploads_public:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+
+  restore-worker:
+    build:
+      context: ./docker/backup
+      dockerfile: Dockerfile
+    container_name: yayasan_restore_prod
+    restart: "no"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${DB_MIGRATOR_USER:-db_migrator}
+      POSTGRES_PASSWORD: ${DB_MIGRATOR_PASSWORD:?DB_MIGRATOR_PASSWORD wajib disetel}
+      POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:-${BACKUP_ENCRYPTION_KEY:?Kunci backup wajib disetel}}
     volumes:
       - backups_data:/backups
       - uploads_private:/var/data/uploads_private
