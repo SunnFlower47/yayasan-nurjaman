@@ -98,27 +98,28 @@ Seluruh keputusan arsitektur sistem terdokumentasi terinci pada berkas modular [
 
 ### Matriks Status ADR Lengkap (ADR-001 s.d. ADR-022)
 
-| ID ADR      | Tanggal    | Topik Keputusan                | Ringkasan Pilihan yang Ditetapkan                                                                   | Status                        |
-| :---------- | :--------- | :----------------------------- | :-------------------------------------------------------------------------------------------------- | :---------------------------- |
-| **ADR-001** | 2026-11-04 | **Arsitektur Aplikasi**        | Next.js App Router + Modular Monolith di `src/modules/`                                             | **DIPUTUSKAN**                |
-| **ADR-002** | 2026-11-04 | **Manajemen Basis Data**       | PostgreSQL + Prisma Migration Only (dilarang `db push`)                                             | **DIPUTUSKAN**                |
-| **ADR-003** | 2026-11-05 | **Prioritas Roadmap**          | Admin Panel Terlebih Dahulu (Fase 1-8), Situs Publik Terakhir (Fase 9)                              | **DIPUTUSKAN**                |
-| **ADR-004** | 2026-11-05 | **Model Otorisasi Aman**       | Pengecekan Otoritatif di Server Action (`requirePermission`)                                        | **DIPUTUSKAN**                |
-| **ADR-005** | 2026-11-04 | **Presisi Finansial**          | `BIGINT` Integer Rupiah & Invarian Keseimbangan Jurnal                                              | **DIPUTUSKAN**                |
-| **ADR-006** | 2026-11-04 | **Konfigurasi Tarif Pajak**    | Master Data Tarif Berversi Tanggal Efektif (`valid_range`)                                          | **DIPUTUSKAN**                |
-| **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**      | Nonce-based CSP, Strict HSTS 2 Tahun, X-Frame-Options DENY                                          | **DIPUTUSKAN**                |
-| **ADR-008** | 2026-11-05 | **Ekosistem Docker-First**     | Docker Compose v2 Multi-Service & Jaringan Internal Anti-UFW Bypass                                 | **DIPUTUSKAN**                |
-| **ADR-009** | 2026-11-05 | **Kriptografi & Migrasi**      | Key Ring + Blind Index Terpisah & Pola Migrasi Expand-Contract                                      | **DIPUTUSKAN**                |
-| **ADR-010** | 2026-11-06 | **Resolusi Nama Akun**         | Bagan Akun `chart_of_accounts`, Kas/Bank `cash_bank_accounts`                                       | **DIPUTUSKAN**                |
-| **ADR-011** | 2026-11-06 | **Pola Library Autentikasi**   | Evaluasi Pemetaan Better Auth vs Auth Tipis Buatan Sendiri (Rekomendasi: Auth Tipis Buatan Sendiri) | **MENUNGGU PERSETUJUAN SAYA** |
-| **ADR-012** | 2026-11-06 | **Model Backup Offsite**       | Kolom Langsung di `backup_jobs` (`offsite_status`, `offsite_storage_key`)                           | **DIPUTUSKAN**                |
-| **ADR-013** | 2026-11-06 | **Abstraksi Storage Media**    | Interface `StorageProvider` (Default `LocalStorageProvider` Volume Docker)                          | **DIPUTUSKAN**                |
-| **ADR-014** | 2026-11-06 | **Strategi Primary Key**       | Primary Key UUID Acak/Unguessable & Nomor Dokumen Kolom Terpisah Gapless Sequence                   | **DIPUTUSKAN**                |
-| **ADR-015** | 2026-11-06 | **Pembakuan Tipe Uang**        | SATU Tipe Data: `BIGINT` Integer Rupiah untuk Seluruh Nilai Finansial                               | **DIPUTUSKAN**                |
-| **ADR-016** | 2026-11-06 | **Standarisasi Tanggal**       | `DATE` untuk Peristiwa Bisnis, `TIMESTAMPTZ` untuk Jejak Audit Sistem                               | **DIPUTUSKAN**                |
-| **ADR-017** | 2026-11-06 | **Model Otorisasi RBAC**       | RBAC Multi-Role dengan Katalog Permission Bersumber Kode                                            | **DIPUTUSKAN**                |
-| **ADR-018** | 2026-11-06 | **Pemisahan Jurnal Akuntansi** | Transaksi Bisnis Operasional Dipisahkan dari Jurnal Akuntansi Ganda                                 | **DIPUTUSKAN**                |
-| **ADR-019** | 2026-11-06 | **Penghapusan & Enum/Lookup**  | Imutabel (Posted), Append-Only (Audit), Soft Delete (Master) & Enum vs Lookup                       | **DIPUTUSKAN**                |
-| **ADR-020** | 2026-11-06 | **Skema Multi-Berkas Prisma**  | Prisma Multi-File Schema (`prismaSchemaFolder` pada Prisma 6.4.1)                                   | **DIPUTUSKAN**                |
-| **ADR-021** | 2026-11-06 | **Konkurensi & Locking**       | Optimistic Locking (`version`), Pessimistic Row Lock (`FOR UPDATE`), `REPEATABLE READ`              | **DIPUTUSKAN**                |
-| **ADR-022** | 2026-11-06 | **Arsitektur Single-Tenant**   | Single-Tenant Eksklusif untuk Yayasan Nurjaman (Tanpa `tenant_id`)                                  | **DIPUTUSKAN**                |
+| ID ADR      | Tanggal    | Topik Keputusan                 | Ringkasan Pilihan yang Ditetapkan                                                                  | Status         |
+| :---------- | :--------- | :------------------------------ | :------------------------------------------------------------------------------------------------- | :------------- |
+| **ADR-001** | 2026-11-04 | **Arsitektur Aplikasi**         | Next.js App Router + Modular Monolith di `src/modules/`                                            | **DIPUTUSKAN** |
+| **ADR-002** | 2026-11-04 | **Manajemen Basis Data**        | PostgreSQL + Prisma Migration Only (dilarang `db push`)                                            | **DIPUTUSKAN** |
+| **ADR-003** | 2026-11-05 | **Prioritas Roadmap**           | Admin Panel Terlebih Dahulu (Fase 1-8), Situs Publik Terakhir (Fase 9)                             | **DIPUTUSKAN** |
+| **ADR-004** | 2026-11-05 | **Model Otorisasi Aman**        | Pengecekan Otoritatif di Server Action (`requirePermission`)                                       | **DIPUTUSKAN** |
+| **ADR-005** | 2026-11-04 | **Presisi Finansial**           | `BIGINT` Integer Rupiah & Invarian Keseimbangan Jurnal                                             | **DIPUTUSKAN** |
+| **ADR-006** | 2026-11-04 | **Konfigurasi Tarif Pajak**     | Master Data Tarif Berversi Tanggal Efektif (`valid_range`)                                         | **DIPUTUSKAN** |
+| **ADR-007** | 2026-11-05 | **Header Keamanan & CSP**       | Nonce-based CSP, Strict HSTS 2 Tahun, X-Frame-Options DENY                                         | **DIPUTUSKAN** |
+| **ADR-008** | 2026-11-05 | **Ekosistem Docker-First**      | Docker Compose v2 Multi-Service & Jaringan Internal Anti-UFW Bypass                                | **DIPUTUSKAN** |
+| **ADR-009** | 2026-11-05 | **Kriptografi & Migrasi**       | Key Ring + Blind Index Terpisah & Pola Migrasi Expand-Contract                                     | **DIPUTUSKAN** |
+| **ADR-010** | 2026-11-06 | **Resolusi Nama Akun**          | Bagan Akun `chart_of_accounts`, Kas/Bank `cash_bank_accounts`                                      | **DIPUTUSKAN** |
+| **ADR-011** | 2026-11-06 | **Pola Library Autentikasi**    | Auth Tipis Buatan Sendiri (Argon2id, Session Token 256-bit, TOTP Replay Prevention, DB Rate Limit) | **DIPUTUSKAN** |
+| **ADR-012** | 2026-11-06 | **Model Backup Offsite**        | Kolom Langsung di `backup_jobs` (`offsite_status`, `offsite_storage_key`)                          | **DIPUTUSKAN** |
+| **ADR-013** | 2026-11-06 | **Abstraksi Storage Media**     | Interface `StorageProvider` (Default `LocalStorageProvider` Volume Docker)                         | **DIPUTUSKAN** |
+| **ADR-014** | 2026-11-06 | **Strategi Primary Key**        | Primary Key UUID Acak/Unguessable & Nomor Dokumen Kolom Terpisah Gapless Sequence                  | **DIPUTUSKAN** |
+| **ADR-015** | 2026-11-06 | **Pembakuan Tipe Uang**         | SATU Tipe Data: `BIGINT` Integer Rupiah untuk Seluruh Nilai Finansial                              | **DIPUTUSKAN** |
+| **ADR-016** | 2026-11-06 | **Standarisasi Tanggal**        | `DATE` untuk Peristiwa Bisnis, `TIMESTAMPTZ` untuk Jejak Audit Sistem                              | **DIPUTUSKAN** |
+| **ADR-017** | 2026-11-06 | **Model Otorisasi RBAC**        | RBAC Multi-Role dengan Katalog Permission Bersumber Kode                                           | **DIPUTUSKAN** |
+| **ADR-018** | 2026-11-06 | **Pemisahan Jurnal Akuntansi**  | Transaksi Bisnis Operasional Dipisahkan dari Jurnal Akuntansi Ganda                                | **DIPUTUSKAN** |
+| **ADR-019** | 2026-11-06 | **Penghapusan & Enum/Lookup**   | Imutabel (Posted), Append-Only (Audit), Soft Delete (Master) & Enum vs Lookup                      | **DIPUTUSKAN** |
+| **ADR-020** | 2026-11-06 | **Skema Multi-Berkas Prisma**   | Prisma Multi-File Schema (`prismaSchemaFolder` pada Prisma 6.4.1)                                  | **DIPUTUSKAN** |
+| **ADR-021** | 2026-11-06 | **Konkurensi & Locking**        | Optimistic Locking (`version`), Pessimistic Row Lock (`FOR UPDATE`), `REPEATABLE READ`             | **DIPUTUSKAN** |
+| **ADR-022** | 2026-11-06 | **Arsitektur Single-Tenant**    | Single-Tenant Eksklusif untuk Yayasan Nurjaman (Tanpa `tenant_id`)                                 | **DIPUTUSKAN** |
+| **ADR-023** | 2026-11-06 | **Image Basis PostgreSQL Prod** | `postgres:17.2-bookworm` (Official Debian) Demi Stabilitas Glibc & Collation                       | **DIPUTUSKAN** |

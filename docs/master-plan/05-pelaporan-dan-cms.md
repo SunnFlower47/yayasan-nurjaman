@@ -8,6 +8,7 @@ Dokumen ini memuat spesifikasi teknis lengkap, ruang lingkup, checklist keamanan
 
 - **Tujuan**: Menyajikan laporan keuangan formal nirlaba yang siap diaudit dan dipresentasikan ke Pembina/Donatur.
 - **Ruang Lingkup**:
+  - [ ] Implementasi lengkap 10 kueri agregasi pelaporan keuangan ISAK 35 (`docs/database/12-reporting-queries.md`).
   - Generator Laporan Posisi Keuangan (Neraca Nirlaba).
   - Generator Laporan Penghasilan Komprehensif (Laporan Aktivitas: Terikat & Tidak Terikat).
   - Generator Laporan Arus Kas (Metode Langsung/Tidak Langsung) & Laporan Perubahan Aset Neto.

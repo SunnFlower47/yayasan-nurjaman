@@ -53,19 +53,19 @@ Perbandingan dilakukan tabel demi tabel, kolom demi kolom, dengan membaca kedua 
 | `username`  | `users` | ✓                | ✓ (baris 37)          | **Sama** |
 | `member_id` | `users` | ✓ (FK → members) | ✓                     | **Sama** |
 
-#### Catatan Usulan Perubahan Jika Menggunakan Better Auth (ADR-011)
+#### Keputusan Final Autentikasi: Auth Tipis Mandiri (ADR-011 DIPUTUSKAN)
 
-Bila pemilik proyek memutuskan menggunakan library Better Auth (Jalan 1 pada ADR-011), maka akan terjadi usulan perubahan struktur Modul 1:
+Pemilik proyek telah memutuskan **Jalan 2: Auth Tipis Buatan Sendiri (Lightweight In-House Auth)** pada ADR-011. Seluruh rencana perubahan tabel Better Auth dibatalkan, dan struktur 12 tabel Modul 1 tetap 100% patuh pada draf pemilik:
 
-| Item Perubahan                                | Di Draf Pemilik                     | Jika Better Auth (ADR-011)           | Status                                           | Alasan & Dampak                                                              |
-| :-------------------------------------------- | :---------------------------------- | :----------------------------------- | :----------------------------------------------- | :--------------------------------------------------------------------------- |
-| Tabel `auth_accounts`                         | Tidak ada                           | Ditambah                             | diubah karena library auth, MENUNGGU PERSETUJUAN | Tempat penyimpanan password hash credential di tabel `account`.              |
-| Kolom `password_hash` di `users`              | Ada di `users`                      | Dipindah ke `auth_accounts.password` | diubah karena library auth, MENUNGGU PERSETUJUAN | Pemisahan data autentikasi credential dari entitas pengguna.                 |
-| Tabel `verification_tokens`                   | Menggunakan `password_reset_tokens` | Menggantikan `password_reset_tokens` | diubah karena library auth, MENUNGGU PERSETUJUAN | Model standar Better Auth untuk reset password.                              |
-| Tabel `two_factor_secrets` & `recovery_codes` | 2 tabel terpisah                    | Digabung ke plugin `twoFactor`       | diubah karena library auth, MENUNGGU PERSETUJUAN | Plugin 2FA resmi Better Auth menyimpan secret dan backup codes terintegrasi. |
-| Kolom `email_verified` di `users`             | Tidak ada                           | Ditambah (boolean)                   | diubah karena library auth, MENUNGGU PERSETUJUAN | Field wajib core schema Better Auth.                                         |
+| Item Usulan Perubahan                         | Di Draf Pemilik                     | Keputusan Final (ADR-011 DIPUTUSKAN) | Status                         | Keterangan                                                      |
+| :-------------------------------------------- | :---------------------------------- | :----------------------------------- | :----------------------------- | :-------------------------------------------------------------- |
+| Tabel `auth_accounts`                         | Tidak ada                           | Ditiadakan                           | dibatalkan, draf dipertahankan | Password hash tetap disimpan langsung di `users.password_hash`. |
+| Kolom `password_hash` di `users`              | Ada di `users`                      | Tetap di `users`                     | dibatalkan, draf dipertahankan | Tidak dipindahkan ke tabel eksternal.                           |
+| Tabel `verification_tokens`                   | Menggunakan `password_reset_tokens` | Tetap `password_reset_tokens`        | dibatalkan, draf dipertahankan | Sesuai draf pemilik untuk reset sandi.                          |
+| Tabel `two_factor_secrets` & `recovery_codes` | 2 tabel terpisah                    | Tetap 2 tabel terpisah               | dibatalkan, draf dipertahankan | Sesuai draf pemilik untuk TOTP dan kode darurat.                |
+| Kolom `email_verified` di `users`             | Tidak ada                           | Tidak ditambahkan                    | dibatalkan, draf dipertahankan | Sesuai draf pemilik (email hanya untuk reset/notifikasi).       |
 
-_(Jika pemilik menyetujui rekomendasi Jalan 2: Auth Tipis Buatan Sendiri, maka seluruh 12 tabel Modul 1 tetap 100% SAMA persis dengan draf pemilik tanpa ada perubahan)._
+_(Hasil: 12 tabel Modul 1 identitas dan akses 100% SAMA persis dengan draf resmi pemilik)._
 
 ---
 

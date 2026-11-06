@@ -60,9 +60,18 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 011 s.d. 013 untuk
        - **Kendali Penuh Sesi**: Kolom `reauth_at`, `is_revoked`, dan `last_active_at` beroperasi murni tanpa lapisan abstraksi adapter pihak ketiga.
      - _Kekurangan_: Staf engineer menulis logika endpoint login, verifikasi TOTP, dan reset sandi secara manual (teruji unit test).
 
-- **Rekomendasi Tegas**:
-  Tim rekayasa merekomendasikan **Jalan 2 (Auth Tipis Buatan Sendiri)** karena sistem bersifat tertutup (hanya pengurus yayasan, tanpa login sosial pihak ketiga) dan menjaga integritas 70 tabel draf pemilik 100% tanpa kompromi. Apabila pemilik tetap menghendaki Better Auth (Jalan 1), spesifikasi pemetaan tabel di atas siap diterapkan dengan mencatat deviasi pada `15-diff-vs-draf.md`.
-- **Status**: **MENUNGGU PERSETUJUAN SAYA**.
+- **Keputusan Pemilik & Rekomendasi**:
+  Ditetapkan **Jalan 2: Auth Tipis Buatan Sendiri (Lightweight In-House Auth)** dengan syarat ketat:
+  1. Sandi di-hash menggunakan **Argon2id** (`@node-rs/argon2`, memory 64MB, time 3, parallelism 4).
+  2. Token sesi acak berentropi tinggi (minimal 256-bit kriptografis), disimpan hanya dalam bentuk hash SHA-256 di kolom `sessions.token_hash`.
+  3. Rotasi sesi instan saat login berhasil dan saat terjadi perubahan peran/hak akses pengguna.
+  4. TOTP RFC 6238 dengan pencegahan replay token (`last_used_step` atau timestamp tracking).
+  5. Rate limiting berbasis tabel `rate_limit_counters` dengan normalisasi alamat IPv6 ke blok `/64`.
+  6. Tanpa fitur registrasi publik, OAuth sosial, maupun magic link (hanya login internal pengurus).
+  7. Seluruh alur autentikasi dan otorisasi terpusat di satu modul domain `src/modules/auth` disertai rangkaian tes kasus negatif komprehensif.
+  8. Wajib diaudit secara independen saat uji penetrasi (pentest) Fase 10.
+  9. Ditinjau ulang apabila di masa depan kebutuhan integrasi eksternal bertambah.
+- **Status**: **DIPUTUSKAN**.
 
 ---
 
