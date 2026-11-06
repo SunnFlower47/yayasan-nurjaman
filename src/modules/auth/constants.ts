@@ -22,7 +22,7 @@ export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // Jendela waktu 15 menit
 export const RATE_LIMIT_LOCKOUT_MS = 15 * 60 * 1000; // Terkunci selama 15 menit
 
 // Kebijakan Keamanan Kata Sandi
-export const PASSWORD_MIN_LENGTH = 12;
+export const PASSWORD_MIN_LENGTH = 8;
 
 // Pesan Kesalahan Seragam (Pencegahan Enumerasi Pengguna)
 export const AUTH_INVALID_CREDENTIALS_MSG = "Username atau password salah";

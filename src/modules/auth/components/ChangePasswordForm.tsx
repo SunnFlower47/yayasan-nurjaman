@@ -62,8 +62,8 @@ export function ChangePasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          placeholder="Minimal 12 karakter aman"
-          helperText="Minimal 12 karakter, bukan data pribadi atau kata sandi umum."
+          placeholder="Minimal 8 karakter aman"
+          helperText="Minimal 8 karakter, bukan data pribadi atau kata sandi umum."
           disabled={isFormDisabled}
         />
 
