@@ -25,6 +25,7 @@
 dump.sql
 *.sql
 !docs/database/sql-snippets/*.sql
+!prisma/migrations/**/*.sql
 *.dump
 *.sql.gz
 /backups

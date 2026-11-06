@@ -29,7 +29,7 @@ export async function checkDatabaseConnection(): Promise<{
 
   try {
     const client = getPrismaClient();
-    await client.$queryRawUnsafe("SELECT 1");
+    await client.$queryRaw`SELECT 1`;
 
     return {
       connected: true,

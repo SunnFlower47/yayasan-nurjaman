@@ -195,7 +195,7 @@ model AuditLog {
   requestId   String?  @map("request_id")
   metadata    Json?    @db.JsonB
 
-  actor User? @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actor User? @relation(fields: [actorUserId], references: [id], onDelete: Restrict)
 
   @@index([entityType, entityId])
   @@index([actorUserId, occurredAt])
@@ -212,7 +212,7 @@ model SecurityEvent {
   userAgent  String?           @map("user_agent")
   details    Json?             @db.JsonB
 
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user User? @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@index([type, occurredAt])
   @@index([userId, occurredAt])

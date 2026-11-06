@@ -191,4 +191,36 @@ describe("Integrasi Basis Data: Modul Identitas dan Akses", () => {
     expect(superAdminAfter).toBe(superAdminBefore);
     expect(superAdminAfter).toBe(1);
   });
+
+  // (e) role db_app gagal DELETE pada tabel users (pengguna hanya boleh di-soft-delete)
+  it("(e) role db_app gagal DELETE pada users tetapi berhasil UPDATE (soft-delete)", async () => {
+    const testUsername = `deltest_${Date.now()}`;
+    const testUser = await migratorClient.user.create({
+      data: {
+        username: testUsername,
+        email: `${testUsername}@yayasan.org`,
+        name: "Delete Tester User",
+        passwordHash: "dummy_hashed_password_sample",
+      },
+    });
+
+    // 1. Eksekusi DELETE oleh db_app WAJIB ditolak oleh hak akses PostgreSQL (permission denied)
+    await expect(
+      appClient.user.delete({
+        where: { id: testUser.id },
+      })
+    ).rejects.toThrow(/permission denied/i);
+
+    // 2. Operasi soft-delete (UPDATE deleted_at) oleh db_app WAJIB berhasil
+    const softDeleted = await appClient.user.update({
+      where: { id: testUser.id },
+      data: { deletedAt: new Date() },
+    });
+    expect(softDeleted.deletedAt).not.toBeNull();
+
+    // Cleanup via migratorClient
+    await migratorClient.user.delete({
+      where: { id: testUser.id },
+    });
+  });
 });
