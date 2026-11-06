@@ -123,3 +123,5 @@ Seluruh keputusan arsitektur sistem terdokumentasi terinci pada berkas modular [
 | **ADR-021** | 2026-11-06 | **Konkurensi & Locking**        | Optimistic Locking (`version`), Pessimistic Row Lock (`FOR UPDATE`), `REPEATABLE READ`             | **DIPUTUSKAN** |
 | **ADR-022** | 2026-11-06 | **Arsitektur Single-Tenant**    | Single-Tenant Eksklusif untuk Yayasan Nurjaman (Tanpa `tenant_id`)                                 | **DIPUTUSKAN** |
 | **ADR-023** | 2026-11-06 | **Image Basis PostgreSQL Prod** | `postgres:17.2-bookworm` (Official Debian) Demi Stabilitas Glibc & Collation                       | **DIPUTUSKAN** |
+| **ADR-024** | 2026-11-06 | **Kepemilikan Header Keamanan** | Aplikasi (`src/middleware.ts`) Pemilik Tunggal CSP & HSTS; Caddy Hanya Mengatur `/uploads/*`       | **DIPUTUSKAN** |
+| **ADR-025** | 2026-11-06 | **Enkripsi Cadangan Restic**    | Restic (AES-256 Poly1305) untuk Backup Terautentikasi, Retensi Prune, dan Kompatibilitas S3        | **DIPUTUSKAN** |

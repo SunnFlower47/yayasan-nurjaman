@@ -1,5 +1,9 @@
 # Caddyfile untuk Reverse Proxy Yayasan Nurjaman Bongas Purwakarta
-# Konfigurasi resmi: TLS otomatis, security headers dasar, dan isolasi uploads publik.
+# Kepemilikan Tunggal Header Keamanan (ADR-024):
+# - Jalur Aplikasi (/ dan API): Seluruh security headers (CSP berbasis nonce, HSTS 2 tahun,
+#   X-Frame-Options, dsb.) dikelola secara berdaulat oleh middleware Next.js.
+#   Caddy DILARANG menimpa atau menambahkan CSP/HSTS pada respon aplikasi.
+# - Jalur Statis Publik (/uploads/*): Dikelola langsung oleh Caddy dengan isolasi ketat.
 
 {
 	# Nonaktifkan endpoint admin Caddy demi keamanan
@@ -7,37 +11,35 @@
 }
 
 {$DOMAIN_NAME:localhost} {
-	# Security Headers Baku (OWASP L2 Compliance)
-	header {
-		# Mencegah MIME-sniffing
-		X-Content-Type-Options "nosniff"
+	# Global: sembunyikan identitas server Caddy
+	header -Server
 
-		# Mencegah Clickjacking
-		X-Frame-Options "DENY"
-
-		# Kebijakan perujuk (Referrer Policy)
-		Referrer-Policy "strict-origin-when-cross-origin"
-
-		# Proteksi XSS warisan
-		X-XSS-Protection "1; mode=block"
-
-		# Isolasi frame ancestors
-		Content-Security-Policy "frame-ancestors 'none';"
-
-		# HTTP Strict Transport Security (HSTS)
-		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-
-		# Sembunyikan identitas server reverse proxy
-		-Server
-	}
-
-	# Sajikan berkas publik langsung dari volume uploads_public (:ro)
+	# 1. Jalur statis publik /uploads/* (Pemilik header: Caddy)
 	handle_path /uploads/* {
+		header {
+			# Mencegah MIME-sniffing
+			X-Content-Type-Options "nosniff"
+
+			# CSP ketat untuk file upload statis (tanpa script eksternal, sandbox)
+			Content-Security-Policy "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+
+			# Proteksi frame
+			X-Frame-Options "DENY"
+
+			# Kebijakan perujuk
+			Referrer-Policy "no-referrer"
+		}
+
+		# File non-gambar dipaksa unduh (attachment) demi mencegah eksekusi script/HTML liar
+		@nonImage not path *.png *.jpg *.jpeg *.gif *.webp *.svg *.ico
+		header @nonImage Content-Disposition "attachment"
+		header !@nonImage Content-Disposition "inline"
+
 		root * /var/data/uploads_public
 		file_server
 	}
 
-	# Teruskan seluruh trafik aplikasi ke container Next.js internal
+	# 2. Jalur dinamis aplikasi (Pemilik header: Middleware Next.js)
 	handle {
 		reverse_proxy app:3000 {
 			header_up Host {host}
