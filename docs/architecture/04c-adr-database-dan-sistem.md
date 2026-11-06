@@ -139,3 +139,16 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 014 s.d. 022 untuk
   Multi-tenant memperkenalkan risiko fatal kebocoran data antar-organisasi jika klausa `WHERE tenant_id = ?` terlewat di repository query, serta membatasi kustomisasi bagan akun (COA) spesifik nirlaba lokal. Sistem ini dibangun khusus untuk Yayasan Nurjaman Bongas Purwakarta sebagai platform institusional mandiri.
 - **Rekomendasi Tegas**: Menerapkan **Arsitektur Single-Tenant**. Seluruh 70 tabel basis data tidak memuat kolom `tenant_id`. Struktur COA, aturan persetujuan, konfigurasi profil, dan domain dioptimasi penuh secara independen untuk Yayasan Nurjaman Bongas Purwakarta.
 - **Status**: **DIPUTUSKAN**.
+
+---
+
+### ADR-023: Pemilihan Varian Image PostgreSQL Produksi (Debian vs Alpine)
+
+- **Konteks**: Memilih distribusi sistem operasi dasar untuk container PostgreSQL 17 di lingkungan produksi.
+- **Opsi**:
+  1. `postgres:17-alpine` (musl libc).
+  2. `postgres:17.2-bookworm` (Debian, GNU C Library / glibc).
+- **Trade-off**:
+  Image varian Alpine memiliki ukuran biner lebih kecil (~150MB lebih hemat disk). Namun Alpine menggunakan musl libc yang memiliki keterbatasan penanganan locale (id_ID.UTF-8) dan rentan terhadap korupsi indeks B-tree saat terjadi pembaruan versi libc di container. Varian Debian menggunakan GNU C Library (glibc) standar industri dengan stabilitas collation string teks yang teruji, kompatibilitas biner mutlak identik antara server PostgreSQL dan perkakas `pg_dump`/`pg_restore` di worker cadangan, serta stabilitas masa panjang dari rilis resmi Debian Bookworm.
+- **Rekomendasi Tegas**: Menggunakan **`postgres:17.2-bookworm` (Official Debian-based)** untuk seluruh container basis data dan worker pencadangan produksi. Varian Alpine hanya diperbolehkan pada lingkungan pengembangan lokal sederhana.
+- **Status**: **DIPUTUSKAN**.

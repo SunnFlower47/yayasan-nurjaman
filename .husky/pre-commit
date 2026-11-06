@@ -1,3 +1,4 @@
+node scripts/check-branch.mjs
 node scripts/check-changelog.mjs
 node scripts/scan-secrets.mjs --staged
 node scripts/check-layers.mjs

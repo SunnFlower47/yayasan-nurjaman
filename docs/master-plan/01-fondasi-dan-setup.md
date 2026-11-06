@@ -39,21 +39,23 @@ Dokumen ini memuat spesifikasi teknis lengkap, ruang lingkup, checklist keamanan
 
 ---
 
-### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Berjalan)
+### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Selesai dengan catatan)
 
 - **Tujuan**: Menetapkan spesifikasi teknis lengkap 70 tabel basis data dalam 8 modul domain, rekonsiliasi draf pemilik, matriks keterlacakan, konvensi, ERD, dan arsitektur pendukung tanpa membuat skema Prisma.
 - **Ruang Lingkup Selesai**:
   - [x] Spesifikasi Docker-first & ADR-008: multi-service, isolasi jaringan internal, mitigasi bypass UFW firewall VPS.
   - [x] Spesifikasi migrasi & ADR-009: pola expand-contract, snapshot pre-deploy, portabilitas mesin di `docs/database/11-migration-plan.md`.
-  - [x] Penetapan ADR-010 (pemetaan auth domain), ADR-011 (Better Auth), ADR-012 (pelacakan backup offsite), ADR-013 (StorageProvider).
+  - [x] Penetapan ADR-010 s.d. ADR-023 (resolusi nama akun, auth tipis mandiri, backup offsite, storage provider, standar PK/uang/tanggal/RBAC/jurnal/soft-delete/multi-file/locking/single-tenant/Debian).
   - [x] Rekonsiliasi draf pemilik & perbandingan tabel-demi-tabel di `docs/database/15-diff-vs-draf.md` (100% dari 70 tabel dan kolom draf utuh).
   - [x] Pemecahan modular 70 tabel dalam 8 berkas domain di `docs/database/00-README.md` s.d. `08-sistem.md`.
   - [x] Standar konvensi basis data (`01-conventions.md`) dan diagram ERD Mermaid komprehensif (`02-erd-overview.md`).
-  - [x] Kueri agregasi pelaporan ISAK 35 (`12-reporting-queries.md`) dan 8 skenario operasional (`13-scenarios.md`).
   - [x] Matriks keterlacakan regulasi, skema evolusi, dan validasi restore (`14-traceability.md`).
   - [x] Dokumentasi asumsi dan pertanyaan terbuka (`99-open-questions.md`).
-  - [x] Pembuktian 5 invarian DDL PostgreSQL di container Docker terisolasi (`docs/database/sql-snippets/`).
-  - [x] Entri changelog terpisah (`0007` s.d. `0012`).
+  - [x] Entri changelog terpisah (`0007` s.d. `0014`).
+- **Pendelegasian Tugas Sisa ke Fase Terkait**:
+  - [ ] Pemetaan dan implementasi auth tipis mandiri dipindahkan ke awal Fase 1.
+  - [ ] Validasi 8 skenario keuangan (`13-scenarios.md`) dan uji invarian DDL dengan nama tabel asli dipindahkan ke Fase 4 (sebagai unit/integration test).
+  - [ ] Implementasi lengkap 10 kueri laporan keuangan ISAK 35 (`12-reporting-queries.md`) dipindahkan ke Fase 7.
 - **Checklist Keamanan Fase 0.6**:
   - [x] Seluruh kunci enkripsi data sensitif (NIK, blind index, credential backup) terdefinisi offline dan tidak dibakar ke image/DB.
   - [x] Role database terpisah: role DDL migrator terisolasi dari role aplikasi `db_app` yang dicabut hak UPDATE/DELETE-nya pada audit log.
@@ -67,7 +69,7 @@ Dokumen ini memuat spesifikasi teknis lengkap, ruang lingkup, checklist keamanan
 
 ---
 
-### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Belum Dimulai)
+### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Berjalan)
 
 - **Tujuan**: Mengimplementasikan seluruh berkas orkestrasi Docker untuk lingkungan pengembangan (dev) dan produksi (prod) sesuai spesifikasi ADR-008, ADR-009, `docs/database/11-migration-plan.md`, dan `docs/database/14-traceability.md`.
 - **Ruang Lingkup**:

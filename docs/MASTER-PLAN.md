@@ -41,8 +41,8 @@ Sistem memiliki 7 tingkatan peran dengan pemisahan tugas (_segregation of duties
 ```mermaid
 flowchart TD
     F0["Fase 0: Setup & Fondasi (Selesai)"] --> F05["Fase 0.5: Pengetatan Aturan & Keamanan (Selesai)"]
-    F05 --> F06["Fase 0.6: Desain Basis Data & Arsitektur (Selesai)"]
-    F06 --> F07["Fase 0.7: Stack Docker Lengkap Dev & Prod (Berikutnya)"]
+    F05 --> F06["Fase 0.6: Desain Basis Data & Arsitektur (Selesai dgn catatan)"]
+    F06 --> F07["Fase 0.7: Stack Docker Lengkap Dev & Prod (Aktif Berjalan)"]
     F07 --> F1["Fase 1: Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit"]
     F1 --> F2["Fase 2: Pengaturan Sistem, Profil Admin & Manajemen User"]
     F2 --> F3["Fase 3: Manajemen Anggota & Data Masking"]
@@ -71,15 +71,15 @@ Inisialisasi Next.js 15, TypeScript strict, Tailwind, ESLint, Prettier, Husky, t
 Audit Fase 0, `CODE-STANDARDS.md`, `SECURITY.md`, AST linter check-layers, scan-secrets hook, CSP nonce, dan Playwright E2E headers test (`0002`-`0006`).
 👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-05-memperketat-aturan-standar-kode--fondasi-keamanan-status-selesai)_
 
-### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Berjalan)
+### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Selesai dengan catatan)
 
-Spesifikasi 70 tabel 8 modul, ADR-008 s.d. ADR-013, 11-migration-plan (expand-contract), 12-reporting-queries, 13-scenarios, 14-traceability, 15-diff-vs-draf, 99-open-questions, DDL invariant verification (`0007`-`0012`).
-👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-06-desain-basis-data--arsitektur-docker-first-status-selesai)_
+Spesifikasi 70 tabel 8 modul, ADR-008 s.d. ADR-023, 11-migration-plan (expand-contract), 14-traceability, 15-diff-vs-draf, 99-open-questions (`0007`-`0014`). Sisanya didelegasikan ke fase masing-masing: pemetaan auth tipis ke awal Fase 1, 8 skenario keuangan & uji invarian DDL tabel asli ke Fase 4, serta 10 kueri laporan ISAK 35 ke Fase 7.
+👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-06-desain-basis-data--arsitektur-docker-first-status-selesai-dengan-catatan)_
 
-### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Belum Dimulai)
+### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Berjalan)
 
-Orkestrasi Docker Compose dev & prod (`yayasan_internal`, mitigasi bypass UFW VPS), Caddy TLS otomatis, migrator sekali jalan, backup worker Postgres 17.
-👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-07-stack-docker-lengkap-dev-dan-prod-status-belum-dimulai)_
+Orkestrasi Docker Compose dev (hot reload) & prod (`yayasan_internal`, Caddy TLS otomatis port 80/443 tunggal, Postgres Debian bookworm, migrator sekali jalan, backup worker terenkripsi lokal/S3, buildx multi-arch).
+👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-07-stack-docker-lengkap-dev-dan-prod-status-berjalan)_
 
 ### Fase 1: Fondasi Admin: Autentikasi, 2FA, Sesi, RBAC, Layout Admin & Audit Log
 
@@ -135,22 +135,22 @@ Simulated grey-box pentest, rekonsiliasi audit akuntan yayasan, deployment VPS C
 
 ## E. Tabel Status Fase Pengerjaan
 
-| Fase         | Nama Fase & Ruang Lingkup                                | Status        | Rincian Dokumen                                                     | ID Changelog Terkait           |
-| :----------- | :------------------------------------------------------- | :------------ | :------------------------------------------------------------------ | :----------------------------- |
-| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens            | **Selesai**   | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0001]`                   |
-| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan      | **Selesai**   | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0002]` s.d. `[ID: 0006]` |
-| **Fase 0.6** | Desain Basis Data & Arsitektur Docker-First              | **Berjalan**  | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` s.d. `[ID: 0012]` |
-| **Fase 0.7** | Stack Docker Lengkap (Dev dan Prod)                      | Belum Dimulai | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` (Desain)          |
-| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout Admin & Audit Log | Belum Dimulai | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
-| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User         | Belum Dimulai | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
-| **Fase 3**   | Manajemen Anggota & Data Masking                         | Belum Dimulai | [`03-anggota`](file:///docs/master-plan/03-anggota-dan-keuangan.md) | -                              |
-| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                        | Belum Dimulai | [`03-anggota`](file:///docs/master-plan/03-anggota-dan-keuangan.md) | -                              |
-| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan                  | Belum Dimulai | [`04-proyek`](file:///docs/master-plan/04-proyek-dan-pajak.md)      | -                              |
-| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                        | Belum Dimulai | [`04-proyek`](file:///docs/master-plan/04-proyek-dan-pajak.md)      | -                              |
-| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor                    | Belum Dimulai | [`05-laporan`](file:///docs/master-plan/05-pelaporan-dan-cms.md)    | -                              |
-| **Fase 8**   | CMS Admin & Backup/Restore Sistem                        | Belum Dimulai | [`05-laporan`](file:///docs/master-plan/05-pelaporan-dan-cms.md)    | -                              |
-| **Fase 9**   | Website Publik, Transparansi & SEO                       | Belum Dimulai | [`06-publik`](file:///docs/master-plan/06-publik-dan-rilis.md)      | -                              |
-| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi                | Belum Dimulai | [`06-publik`](file:///docs/master-plan/06-publik-dan-rilis.md)      | -                              |
+| Fase         | Nama Fase & Ruang Lingkup                                | Status                     | Rincian Dokumen                                                     | ID Changelog Terkait           |
+| :----------- | :------------------------------------------------------- | :------------------------- | :------------------------------------------------------------------ | :----------------------------- |
+| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens            | **Selesai**                | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0001]`                   |
+| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan      | **Selesai**                | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0002]` s.d. `[ID: 0006]` |
+| **Fase 0.6** | Desain Basis Data & Arsitektur Docker-First              | **Selesai dengan catatan** | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` s.d. `[ID: 0014]` |
+| **Fase 0.7** | Stack Docker Lengkap (Dev dan Prod)                      | **Berjalan**               | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` (Desain)          |
+| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout Admin & Audit Log | Belum Dimulai              | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
+| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User         | Belum Dimulai              | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
+| **Fase 3**   | Manajemen Anggota & Data Masking                         | Belum Dimulai              | [`03-anggota`](file:///docs/master-plan/03-anggota-dan-keuangan.md) | -                              |
+| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                        | Belum Dimulai              | [`03-anggota`](file:///docs/master-plan/03-anggota-dan-keuangan.md) | -                              |
+| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan                  | Belum Dimulai              | [`04-proyek`](file:///docs/master-plan/04-proyek-dan-pajak.md)      | -                              |
+| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                        | Belum Dimulai              | [`04-proyek`](file:///docs/master-plan/04-proyek-dan-pajak.md)      | -                              |
+| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor                    | Belum Dimulai              | [`05-laporan`](file:///docs/master-plan/05-pelaporan-dan-cms.md)    | -                              |
+| **Fase 8**   | CMS Admin & Backup/Restore Sistem                        | Belum Dimulai              | [`05-laporan`](file:///docs/master-plan/05-pelaporan-dan-cms.md)    | -                              |
+| **Fase 9**   | Website Publik, Transparansi & SEO                       | Belum Dimulai              | [`06-publik`](file:///docs/master-plan/06-publik-dan-rilis.md)      | -                              |
+| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi                | Belum Dimulai              | [`06-publik`](file:///docs/master-plan/06-publik-dan-rilis.md)      | -                              |
 
 ---
 

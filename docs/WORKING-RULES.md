@@ -50,6 +50,9 @@ Sistem pencatatan perubahan berpegang pada panduan [`changelogs/README.md`](file
    Tipe yang valid: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`, `perf`, `build`, `ci`.
 3. **Commit Atomik**: Setiap commit menyelesaikan satu unit pekerjaan yang koheren.
 4. **Proteksi File Sensitif**: Dilarang keras melakukan commit terhadap `.env`, credentials, secret keys, dump SQL, database binary, atau berkas unggahan publik.
+5. **Proteksi Branch Utama & Batasan Hook Lokal**:
+   - Git hook Husky memblokir commit langsung pada branch `main` atau `master` (merge commit diperbolehkan).
+   - _Catatan Kritis Keamanan_: Hook Git lokal dapat dilewati pengembang dengan opsi `--no-verify`. Oleh karena itu, fitur **Branch Protection Rules** pada repositori hosting Git (GitHub / GitLab) wajib diaktifkan segera setelah repositori terhubung, dengan mewajibkan Pull Request dan verifikasi status CI sebelum merge ke branch `main`.
 
 ---
 

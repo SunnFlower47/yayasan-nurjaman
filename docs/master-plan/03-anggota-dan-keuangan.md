@@ -27,6 +27,8 @@ Dokumen ini memuat spesifikasi teknis lengkap, ruang lingkup, checklist keamanan
 
 - **Tujuan**: Membangun mesin pencatatan transaksi jurnal berimbang ganda dan pengelolaan kas/bank.
 - **Ruang Lingkup**:
+  - [ ] Implementasi dan validasi 8 skenario keuangan operasional nirlaba (`docs/database/13-scenarios.md`).
+  - [ ] Pengujian otomatis invarian DDL dengan nama tabel asli skema basis data (keseimbangan debit=kredit, imutabilitas posted, closed period sebagai unit/integration test).
   - Skema database ChartOfAccount (COA), JournalEntry, JournalLine, CashAccount, AccountingPeriod.
   - Bagan Akun Standar Entitas Nonlaba (Aset Neto Dengan & Tanpa Pembatasan).
   - Form input kas masuk/keluar & jurnal umum dengan validasi real-time Debit = Kredit.

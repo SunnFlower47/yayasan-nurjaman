@@ -8,8 +8,9 @@ Dokumen ini memuat spesifikasi teknis lengkap, ruang lingkup, checklist keamanan
 
 - **Tujuan**: Menyiapkan akses masuk aman, hierarki izin pengguna, shell layout admin, dan audit log inti.
 - **Ruang Lingkup**:
-  - Skema tabel User, Session, Account, Role, Permission, dan AuditLog di Prisma (memetakan skema domain Better Auth sesuai ADR-010 & ADR-011).
-  - Autentikasi berbasis password ter-hash Argon2id, cookie sesi aman (`HttpOnly`, `SameSite=Lax`, `Secure`, prefix `__Host-`).
+  - [ ] Pemetaan dan implementasi auth tipis buatan sendiri di awal Fase 1 (Argon2id, token hash 256-bit, rotasi sesi login/hak akses, TOTP replay prevention, DB rate limit IPv6 /64, modul tunggal `src/modules/auth` sesuai ADR-011).
+  - Skema tabel User, Session, Role, Permission, dan AuditLog di Prisma (sesuai draf pemilik 12 tabel Modul 1).
+  - Autentikasi berbasis username + password ter-hash Argon2id, cookie sesi aman (`HttpOnly`, `SameSite=Lax`, `Secure`, prefix `__Host-`).
   - Otentikasi dua faktor (TOTP RFC 6238) wajib untuk Super Admin, Ketua, dan Bendahara.
   - Sistem verifikasi izin server-side (`requireUser()`, `requirePermission()`) pada setiap Server Action.
   - Shell layout admin (Sidebar responsif, Header pengurus, Breadcrumb, Dark mode).
