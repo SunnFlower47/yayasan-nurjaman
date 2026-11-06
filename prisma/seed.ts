@@ -1,8 +1,8 @@
 import { PrismaClient } from "@prisma/client";
 import * as argon2 from "@node-rs/argon2";
 import { SYSTEM_PERMISSIONS } from "../src/modules/auth/permissions";
+import { validatePasswordPolicy } from "../src/modules/auth";
 
-// Pastikan seed terhubung menggunakan kredensial db_migrator
 function getMigratorDatabaseUrl(): string {
   const envUrl = process.env["DATABASE_URL"] || "";
   const migratorUser = process.env["DB_MIGRATOR_USER"] || "db_migrator";
@@ -15,11 +15,7 @@ function getMigratorDatabaseUrl(): string {
 }
 
 const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: getMigratorDatabaseUrl(),
-    },
-  },
+  datasources: { db: { url: getMigratorDatabaseUrl() } },
 });
 
 interface SystemRoleDef {
@@ -33,8 +29,7 @@ const SYSTEM_ROLES: SystemRoleDef[] = [
   {
     code: "SUPER_ADMIN",
     name: "Super Admin",
-    description:
-      "Akses penuh tak terbatas ke seluruh modul sistem (Pemilik / Administrator Utama)",
+    description: "Akses penuh tak terbatas ke seluruh modul sistem (Pemilik)",
     permissions: SYSTEM_PERMISSIONS.map((p) => p.code),
   },
   {
@@ -87,23 +82,13 @@ const SYSTEM_ROLES: SystemRoleDef[] = [
   },
 ];
 
-async function main() {
-  console.log("=== [MEMULAI SEED DATABASE IDENTITAS & AKSES] ===");
-
-  // 1. Sinkronisasi Katalog Izin Resmi dari Kode
-  console.log(
-    `-> Menyinkronkan ${SYSTEM_PERMISSIONS.length} izin resmi dari katalog kode...`
-  );
+async function syncPermissions(): Promise<Map<string, string>> {
+  console.log(`-> Menyinkronkan ${SYSTEM_PERMISSIONS.length} izin resmi...`);
   const permissionMap = new Map<string, string>();
-
   for (const perm of SYSTEM_PERMISSIONS) {
     const record = await prisma.permission.upsert({
       where: { code: perm.code },
-      update: {
-        module: perm.module,
-        action: perm.action,
-        description: perm.description,
-      },
+      update: { module: perm.module, action: perm.action, description: perm.description },
       create: {
         code: perm.code,
         module: perm.module,
@@ -113,123 +98,127 @@ async function main() {
     });
     permissionMap.set(record.code, record.id);
   }
+  return permissionMap;
+}
 
-  // 2. Sinkronisasi 7 Peran Sistem Bawaan
+async function syncRoles(
+  permissionMap: Map<string, string>
+): Promise<Map<string, string>> {
   console.log(`-> Menyinkronkan ${SYSTEM_ROLES.length} peran sistem bawaan...`);
   const roleMap = new Map<string, string>();
-
   for (const r of SYSTEM_ROLES) {
     const roleRecord = await prisma.role.upsert({
       where: { code: r.code },
-      update: {
-        name: r.name,
-        description: r.description,
-        isSystem: true,
-      },
-      create: {
-        code: r.code,
-        name: r.name,
-        description: r.description,
-        isSystem: true,
-      },
+      update: { name: r.name, description: r.description, isSystem: true },
+      create: { code: r.code, name: r.name, description: r.description, isSystem: true },
     });
     roleMap.set(roleRecord.code, roleRecord.id);
 
-    // Sinkronisasi Izin untuk Peran
     for (const permCode of r.permissions) {
       const permId = permissionMap.get(permCode);
       if (permId) {
         await prisma.rolePermission.upsert({
-          where: {
-            roleId_permissionId: {
-              roleId: roleRecord.id,
-              permissionId: permId,
-            },
-          },
+          where: { roleId_permissionId: { roleId: roleRecord.id, permissionId: permId } },
           update: {},
-          create: {
-            roleId: roleRecord.id,
-            permissionId: permId,
-          },
+          create: { roleId: roleRecord.id, permissionId: permId },
         });
       }
     }
   }
+  return roleMap;
+}
 
-  // 3. Akun Super Admin Awal dari Variabel Lingkungan
-  const adminUsername = (process.env["INITIAL_ADMIN_USERNAME"] || "admin")
-    .toLowerCase()
-    .trim();
-  const adminEmail = (process.env["INITIAL_ADMIN_EMAIL"] || "admin@yayasan-nurjaman.org")
-    .toLowerCase()
-    .trim();
-  const adminPassword =
-    process.env["INITIAL_ADMIN_PASSWORD"] || "Admin123!Secure@Yayasan";
+function getValidatedAdminCredentials(): {
+  username: string;
+  email: string;
+  password: string;
+} {
+  const username = process.env["INITIAL_ADMIN_USERNAME"]?.toLowerCase().trim();
+  const email = process.env["INITIAL_ADMIN_EMAIL"]?.toLowerCase().trim();
+  const password = process.env["INITIAL_ADMIN_PASSWORD"];
 
-  console.log(
-    `-> Menginisialisasi akun Super Admin: username='${adminUsername}', email='${adminEmail}'`
-  );
+  if (!username || !email || !password) {
+    console.error(
+      "❌ Inisialisasi admin gagal: Variabel lingkungan INITIAL_ADMIN_USERNAME, INITIAL_ADMIN_EMAIL, dan INITIAL_ADMIN_PASSWORD wajib diisi saat akun admin belum terdaftar."
+    );
+    process.exit(1);
+  }
 
-  const passwordHash = await argon2.hash(adminPassword, {
+  const policy = validatePasswordPolicy(password, { username, email });
+  if (!policy.valid) {
+    console.error(
+      `❌ Inisialisasi admin gagal: Kata sandi INITIAL_ADMIN_PASSWORD tidak memenuhi kebijakan keamanan yayasan: ${policy.error}`
+    );
+    process.exit(1);
+  }
+
+  return { username, email, password };
+}
+
+async function createSuperAdmin(
+  creds: { username: string; email: string; password: string },
+  roleId: string
+): Promise<void> {
+  console.log(`-> Menginisialisasi akun Super Admin baru: username='${creds.username}'`);
+  const passwordHash = await argon2.hash(creds.password, {
     memoryCost: 65536,
     timeCost: 3,
     outputLen: 32,
     parallelism: 4,
-    algorithm: 2, // Argon2id (default)
+    algorithm: 2,
   });
 
-  // Cari apakah user sudah ada
-  let superAdminUser = await prisma.user.findFirst({
-    where: {
-      OR: [{ username: adminUsername }, { email: adminEmail }],
-      deletedAt: null,
+  const superAdminUser = await prisma.user.create({
+    data: {
+      username: creds.username,
+      email: creds.email,
+      name: "Super Administrator",
+      passwordHash,
+      status: "ACTIVE",
+      mustChangePassword: true,
     },
   });
 
-  if (!superAdminUser) {
-    superAdminUser = await prisma.user.create({
-      data: {
-        username: adminUsername,
-        email: adminEmail,
-        name: "Super Administrator",
-        passwordHash,
-        status: "ACTIVE",
-        mustChangePassword: true,
-      },
-    });
+  await prisma.userRole.create({
+    data: { userId: superAdminUser.id, roleId, assignedBy: superAdminUser.id },
+  });
+  console.log(
+    "   [BARU] Akun Super Admin berhasil dibuat (must_change_password = true)."
+  );
+}
+
+async function initSuperAdmin(superAdminRoleId: string): Promise<void> {
+  const existingRole = await prisma.userRole.findFirst({
+    where: { roleId: superAdminRoleId },
+    include: { user: true },
+  });
+
+  if (existingRole?.user && existingRole.user.deletedAt === null) {
     console.log(
-      "   [BARU] Akun Super Admin berhasil dibuat (must_change_password = true)."
+      `   [LEWATI] Akun Super Admin ('${existingRole.user.username}') sudah terdaftar.`
     );
-  } else {
-    console.log("   [LEWATI] Akun Super Admin sudah terdaftar.");
+    return;
   }
 
-  // Menugaskan Peran SUPER_ADMIN ke Akun Super Admin
+  const creds = getValidatedAdminCredentials();
+  await createSuperAdmin(creds, superAdminRoleId);
+}
+
+async function main() {
+  console.log("=== [MEMULAI SEED DATABASE IDENTITAS & AKSES] ===");
+  const permissionMap = await syncPermissions();
+  const roleMap = await syncRoles(permissionMap);
   const superAdminRoleId = roleMap.get("SUPER_ADMIN");
-  if (superAdminRoleId && superAdminUser) {
-    await prisma.userRole.upsert({
-      where: {
-        userId_roleId: {
-          userId: superAdminUser.id,
-          roleId: superAdminRoleId,
-        },
-      },
-      update: {},
-      create: {
-        userId: superAdminUser.id,
-        roleId: superAdminRoleId,
-        assignedBy: superAdminUser.id, // Penugasan awal sistem oleh diri sendiri
-      },
-    });
-    console.log("   [TERKAIT] Peran SUPER_ADMIN terhubung ke pengguna awal.");
-  }
 
+  if (superAdminRoleId) {
+    await initSuperAdmin(superAdminRoleId);
+  }
   console.log("=== [SEED BERHASIL SELESAI SECARA IDEMPOTEN] ===");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Terjadi kesalahan saat menjalankan seed:", e);
+    console.error("❌ Terjadi kesalahan saat menjalankan seed:", e.message || e);
     process.exit(1);
   })
   .finally(async () => {
