@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
 
 const prisma = new PrismaClient();
-const initialAdminPassword = "Admin123!Secure@Yayasan";
+const initialAdminPassword = "KunciAman#2026@YayasanNurjamanPurwakarta";
 
 async function resetAdminPassword() {
   const passwordHash = await hash(initialAdminPassword, {
