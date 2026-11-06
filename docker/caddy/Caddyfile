@@ -1,0 +1,49 @@
+# Caddyfile untuk Reverse Proxy Yayasan Nurjaman Bongas Purwakarta
+# Konfigurasi resmi: TLS otomatis, security headers dasar, dan isolasi uploads publik.
+
+{
+	# Nonaktifkan endpoint admin Caddy demi keamanan
+	admin off
+}
+
+{$DOMAIN_NAME:localhost} {
+	# Security Headers Baku (OWASP L2 Compliance)
+	header {
+		# Mencegah MIME-sniffing
+		X-Content-Type-Options "nosniff"
+
+		# Mencegah Clickjacking
+		X-Frame-Options "DENY"
+
+		# Kebijakan perujuk (Referrer Policy)
+		Referrer-Policy "strict-origin-when-cross-origin"
+
+		# Proteksi XSS warisan
+		X-XSS-Protection "1; mode=block"
+
+		# Isolasi frame ancestors
+		Content-Security-Policy "frame-ancestors 'none';"
+
+		# HTTP Strict Transport Security (HSTS)
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+
+		# Sembunyikan identitas server reverse proxy
+		-Server
+	}
+
+	# Sajikan berkas publik langsung dari volume uploads_public (:ro)
+	handle_path /uploads/* {
+		root * /var/data/uploads_public
+		file_server
+	}
+
+	# Teruskan seluruh trafik aplikasi ke container Next.js internal
+	handle {
+		reverse_proxy app:3000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+}
