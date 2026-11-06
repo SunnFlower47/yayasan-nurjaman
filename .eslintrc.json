@@ -25,6 +25,17 @@
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_"
       }
+    ],
+    "no-restricted-properties": [
+      "error",
+      {
+        "property": "$queryRawUnsafe",
+        "message": "Penggunaan $queryRawUnsafe dilarang demi keamanan SQL injection. Gunakan $queryRaw bertemplat."
+      },
+      {
+        "property": "$executeRawUnsafe",
+        "message": "Penggunaan $executeRawUnsafe dilarang demi keamanan SQL injection. Gunakan $executeRaw bertemplat."
+      }
     ]
   },
   "overrides": [
@@ -34,7 +45,8 @@
         "max-lines": "off",
         "complexity": "off",
         "max-params": "off",
-        "no-console": "off"
+        "no-console": "off",
+        "no-restricted-properties": "off"
       }
     },
     {

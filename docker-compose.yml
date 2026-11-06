@@ -72,6 +72,8 @@ services:
     restart: "no"
     environment:
       - DATABASE_URL=postgresql://${DB_MIGRATOR_USER:-db_migrator}:${DB_MIGRATOR_PASSWORD:-migrator_secure_pass_123!}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
+    volumes:
+      - ./prisma:/app/prisma
     depends_on:
       postgres:
         condition: service_healthy
