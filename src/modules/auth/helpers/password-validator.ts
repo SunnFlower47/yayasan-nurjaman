@@ -57,7 +57,7 @@ function hasEmailCollision(password: string, email?: string): boolean {
 
 /**
  * Memvalidasi apakah kata sandi baru memenuhi standar keamanan yayasan:
- * 1. Minimal 12 karakter.
+ * 1. Minimal 8 karakter.
  * 2. Tidak boleh sama atau memuat username.
  * 3. Tidak boleh sama atau memuat alamat email.
  * 4. Tidak boleh terdapat dalam daftar ~10.000 kata sandi pasaran lokal.

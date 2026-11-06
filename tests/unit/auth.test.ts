@@ -59,8 +59,8 @@ describe("Unit Tests: Utilitas Modul Autentikasi dan Keamanan", () => {
   });
 
   describe("Validasi Kebijakan Kata Sandi", () => {
-    it("menolak kata sandi kurang dari batas minimum 12 karakter", () => {
-      const result = validatePasswordPolicy("Pendek123!");
+    it("menolak kata sandi kurang dari batas minimum 8 karakter", () => {
+      const result = validatePasswordPolicy("Pndek1!");
       expect(result.valid).toBe(false);
       expect(result.error).toContain(String(PASSWORD_MIN_LENGTH));
     });

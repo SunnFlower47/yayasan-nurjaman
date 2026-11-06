@@ -49,7 +49,7 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 
 - **Algoritma**: Wajib menggunakan **Argon2id** (memory: 64MB / 65536 KB, iterations: 3, parallelism: 4) atau **bcrypt** dengan cost factor minimal 12.
 - **Kekuatan Sandi**:
-  - Panjang minimal: **12 karakter**.
+  - Panjang minimal: **8 karakter**.
   - Wajib kombinasi huruf besar, huruf kecil, angka, dan simbol khusus.
   - Pengecekan daftar hitam kata sandi umum (_common passwords blocklist_).
 
