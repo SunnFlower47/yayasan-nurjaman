@@ -1,0 +1,160 @@
+# ==============================================================================
+# Docker Compose untuk Lingkungan Produksi (Production)
+# Yayasan Nurjaman Bongas Purwakarta
+# ==============================================================================
+# Keamanan Ketat:
+# 1. HANYA layanan reverse-proxy (Caddy) yang mempublikasikan port 80/443.
+# 2. Database postgres dan aplikasi app TIDAK mempublikasikan port ke host publik.
+# 3. uploads_private TIDAK PERNAH dimount ke reverse-proxy Caddy.
+# 4. uploads_public dimount sebagai read-only (:ro) ke Caddy.
+# ==============================================================================
+
+services:
+  reverse-proxy:
+    image: caddy:2.9.1-alpine
+    container_name: yayasan_proxy_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME:-localhost}
+    volumes:
+      - ./docker/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+      - uploads_public:/var/data/uploads_public:ro
+    depends_on:
+      app:
+        condition: service_healthy
+    networks:
+      - yayasan_public
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+
+  app:
+    build:
+      context: .
+      target: runner
+    container_name: yayasan_app_prod
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache:uid=1001,gid=1001
+    user: "1001:1001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-yayasan_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - AUTH_SECRET=${AUTH_SECRET}
+      - ENCRYPTION_KEY_ACTIVE_ID=${ENCRYPTION_KEY_ACTIVE_ID}
+      - ENCRYPTION_KEYS=${ENCRYPTION_KEYS}
+      - BLIND_INDEX_SECRET=${BLIND_INDEX_SECRET}
+    volumes:
+      - uploads_private:/var/data/uploads_private
+      - uploads_public:/var/data/uploads_public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  postgres:
+    image: postgres:17.2-bookworm
+    container_name: yayasan_postgres_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-yayasan_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-yayasan_user} -d ${POSTGRES_DB:-yayasan_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    container_name: yayasan_migrate_prod
+    restart: "no"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-yayasan_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+
+  backup-worker:
+    build:
+      context: ./docker/backup
+      dockerfile: Dockerfile
+    container_name: yayasan_backup_prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-yayasan_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      S3_REGION: ${S3_REGION:-}
+    volumes:
+      - backups_data:/backups
+      - uploads_private:/var/data/uploads_private
+      - uploads_public:/var/data/uploads_public
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yayasan_internal
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  postgres_data:
+    name: yayasan_prod_postgres_data
+  uploads_private:
+    name: yayasan_prod_uploads_private
+  uploads_public:
+    name: yayasan_prod_uploads_public
+  backups_data:
+    name: yayasan_prod_backups_data
+  caddy_data:
+    name: yayasan_prod_caddy_data
+  caddy_config:
+    name: yayasan_prod_caddy_config
+
+networks:
+  yayasan_public:
+    name: yayasan_prod_public
+  yayasan_internal:
+    name: yayasan_prod_internal

@@ -1,7 +1,42 @@
+# ==============================================================================
+# Docker Compose untuk Lingkungan Pengembangan (Development)
+# Yayasan Nurjaman Bongas Purwakarta
+# ==============================================================================
+# Menjalankan aplikasi Next.js dengan hot reload serta PostgreSQL terisolasi.
+# Port PostgreSQL HANYA dibuka ke interface loopback lokal (127.0.0.1).
+# ==============================================================================
+
 services:
+  app:
+    build:
+      context: .
+      target: dev
+    container_name: yayasan_app_dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-yayasan_nurjaman}?schema=public
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - AUTH_SECRET=${AUTH_SECRET:-super-secret-auth-key-min-32-chars-long!}
+      - ENCRYPTION_KEY_ACTIVE_ID=${ENCRYPTION_KEY_ACTIVE_ID:-k1}
+      - ENCRYPTION_KEYS=${ENCRYPTION_KEYS:-{"k1":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}}
+      - BLIND_INDEX_SECRET=${BLIND_INDEX_SECRET:-blind-index-secret-key-min-32-chars!}
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - yayasan_dev_net
+
   postgres:
-    image: postgres:17-alpine
-    container_name: yayasan_postgres
+    image: postgres:17.2-bookworm
+    container_name: yayasan_postgres_dev
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -10,7 +45,7 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_dev_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-yayasan_nurjaman}"]
       interval: 5s
@@ -18,12 +53,12 @@ services:
       retries: 5
       start_period: 5s
     networks:
-      - yayasan_network
+      - yayasan_dev_net
 
 volumes:
-  postgres_data:
-    name: yayasan_nurjaman_postgres_data
+  postgres_dev_data:
+    name: yayasan_dev_postgres_data
 
 networks:
-  yayasan_network:
-    name: yayasan_nurjaman_network
+  yayasan_dev_net:
+    name: yayasan_dev_network
