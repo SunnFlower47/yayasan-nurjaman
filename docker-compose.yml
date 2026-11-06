@@ -18,16 +18,18 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-yayasan_nurjaman}?schema=public
+      - DATABASE_URL=postgresql://${DB_APP_USER:-db_app}:${DB_APP_PASSWORD:-app_secure_pass_456!}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
       - AUTH_SECRET=${AUTH_SECRET:-super-secret-auth-key-min-32-chars-long!}
       - ENCRYPTION_KEY_ACTIVE_ID=${ENCRYPTION_KEY_ACTIVE_ID:-k1}
       - ENCRYPTION_KEYS=${ENCRYPTION_KEYS:-{"k1":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}}
       - BLIND_INDEX_SECRET=${BLIND_INDEX_SECRET:-blind-index-secret-key-min-32-chars!}
     volumes:
-      - .:/app
-      - /app/node_modules
-      - /app/.next
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./next.config.ts:/app/next.config.ts
+      - ./tailwind.config.ts:/app/tailwind.config.ts
+      - ./postcss.config.mjs:/app/postcss.config.mjs
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,18 +42,39 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-yayasan_nurjaman}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_master_pass_123!}
+      POSTGRES_DB: ${POSTGRES_DB:-yayasan_db}
+      DB_MIGRATOR_USER: ${DB_MIGRATOR_USER:-db_migrator}
+      DB_MIGRATOR_PASSWORD: ${DB_MIGRATOR_PASSWORD:-migrator_secure_pass_123!}
+      DB_APP_USER: ${DB_APP_USER:-db_app}
+      DB_APP_PASSWORD: ${DB_APP_PASSWORD:-app_secure_pass_456!}
+      DB_BACKUP_USER: ${DB_BACKUP_USER:-db_backup}
+      DB_BACKUP_PASSWORD: ${DB_BACKUP_PASSWORD:-backup_secure_pass_789!}
     ports:
       - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_dev_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-yayasan_nurjaman}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-yayasan_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
       start_period: 5s
+    networks:
+      - yayasan_dev_net
+
+  migrate:
+    build:
+      context: .
+      target: migrator
+    container_name: yayasan_migrate_dev
+    restart: "no"
+    environment:
+      - DATABASE_URL=postgresql://${DB_MIGRATOR_USER:-db_migrator}:${DB_MIGRATOR_PASSWORD:-migrator_secure_pass_123!}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - yayasan_dev_net
 

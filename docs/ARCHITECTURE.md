@@ -113,7 +113,7 @@ Seluruh keputusan arsitektur sistem terdokumentasi terinci pada berkas modular [
 | **ADR-011** | 2026-11-06 | **Pola Library Autentikasi**    | Auth Tipis Buatan Sendiri (Argon2id, Session Token 256-bit, TOTP Replay Prevention, DB Rate Limit) | **DIPUTUSKAN** |
 | **ADR-012** | 2026-11-06 | **Model Backup Offsite**        | Kolom Langsung di `backup_jobs` (`offsite_status`, `offsite_storage_key`)                          | **DIPUTUSKAN** |
 | **ADR-013** | 2026-11-06 | **Abstraksi Storage Media**     | Interface `StorageProvider` (Default `LocalStorageProvider` Volume Docker)                         | **DIPUTUSKAN** |
-| **ADR-014** | 2026-11-06 | **Strategi Primary Key**        | Primary Key UUID Acak/Unguessable & Nomor Dokumen Kolom Terpisah Gapless Sequence                  | **DIPUTUSKAN** |
+| **ADR-014** | 2026-11-06 | **Strategi Primary Key**        | Primary Key UUIDv7 Native Berbasis Waktu & Nomor Dokumen Kolom Terpisah Number Sequences           | **DIPUTUSKAN** |
 | **ADR-015** | 2026-11-06 | **Pembakuan Tipe Uang**         | SATU Tipe Data: `BIGINT` Integer Rupiah untuk Seluruh Nilai Finansial                              | **DIPUTUSKAN** |
 | **ADR-016** | 2026-11-06 | **Standarisasi Tanggal**        | `DATE` untuk Peristiwa Bisnis, `TIMESTAMPTZ` untuk Jejak Audit Sistem                              | **DIPUTUSKAN** |
 | **ADR-017** | 2026-11-06 | **Model Otorisasi RBAC**        | RBAC Multi-Role dengan Katalog Permission Bersumber Kode                                           | **DIPUTUSKAN** |
