@@ -20,6 +20,13 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     GRANT ALL PRIVILEGES ON DATABASE ${POSTGRES_DB} TO ${DB_MIGRATOR_USER:-db_migrator};
     ALTER SCHEMA public OWNER TO ${DB_MIGRATOR_USER:-db_migrator};
     GRANT ALL ON SCHEMA public TO ${DB_MIGRATOR_USER:-db_migrator};
+    GRANT ALL ON ALL TABLES IN SCHEMA public TO ${DB_MIGRATOR_USER:-db_migrator};
+    GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO ${DB_MIGRATOR_USER:-db_migrator};
+
+    ALTER DEFAULT PRIVILEGES FOR ROLE ${POSTGRES_USER} IN SCHEMA public
+        GRANT ALL ON TABLES TO ${DB_MIGRATOR_USER:-db_migrator};
+    ALTER DEFAULT PRIVILEGES FOR ROLE ${POSTGRES_USER} IN SCHEMA public
+        GRANT ALL ON SEQUENCES TO ${DB_MIGRATOR_USER:-db_migrator};
 
     -- 2. Role Aplikasi (db_app): DML only, NO DDL, bukan superuser
     DO \$\$

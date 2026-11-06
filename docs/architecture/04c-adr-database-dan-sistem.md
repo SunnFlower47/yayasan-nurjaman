@@ -13,9 +13,9 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 014 s.d. 022 untuk
 - **Trade-off**:
   Auto-increment integer membocorkan volume transaksi organisasi, mudah ditebak (_Insecure Direct Object Reference / IDOR_), dan menyulitkan penggabungan data. Namun penomoran dokumen manusiawi (misal: `JV/2026/11/0001`) tetap dibutuhkan pengurus dan akuntan yayasan secara urut tanpa celah (_gapless_).
 - **Rekomendasi Tegas**:
-  1. **Primary Key Internal Wajib Non-Berurutan & Tidak Bisa Ditebak**: Seluruh tabel menggunakan UUIDv4/CUID2 (`VARCHAR(36)` atau native UUID) yang dihasilkan aplikasi atau PostgreSQL `gen_random_uuid()`.
+  1. **Primary Key Internal Wajib Non-Berurutan & Berbasis Waktu (UUIDv7)**: Seluruh tabel menggunakan tipe data native `UUID` di PostgreSQL dengan UUIDv7 yang dibangkitkan oleh kode aplikasi (atau `gen_random_uuid()` sebagai fallback database) guna mencegah fragmentasi indeks B-Tree.
   2. **Nomor Dokumen Manusiawi di Kolom Terpisah**: Disimpan pada kolom bisnis terpisah (`entry_number`, `receipt_no`, `kta_no`) dengan constraint `UNIQUE`.
-  3. **Penomoran Tanpa Celah (_Gapless Sequence Table_)**: Dihasilkan melalui tabel khusus `document_sequences` dengan penguncian baris pesimistik (`SELECT next_val FROM document_sequences WHERE code = $1 FOR UPDATE`) di dalam transaksi DB, mencegah celah nomor akibat rollback atau tabrakan konkurensi.
+  3. **Penomoran Tanpa Celah (_Gapless Sequence Table_)**: Dihasilkan melalui tabel khusus `number_sequences` dengan penguncian baris pesimistik (`SELECT next_val FROM number_sequences WHERE code = $1 FOR UPDATE`) di dalam transaksi DB, mencegah celah nomor akibat rollback atau tabrakan konkurensi.
 - **Status**: **DIPUTUSKAN**. _(Rujukan: `docs/database/01-conventions.md` Bagian 2 & 5)_.
 
 ---
@@ -74,7 +74,7 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 014 s.d. 022 untuk
   2. Pemisahan entitas: Transaksi operasional bisnis dicatat pada tabel domain masing-masing, kemudian saat disahkan membentuk rekaman jurnal berimbang ganda di `journal_entries`.
 - **Trade-off**:
   Opsi 1 mengotori tabel akuntansi dengan puluhan kolom khusus modul proyek atau anggota. Opsi 2 memisahkan _business transaction event_ dari _accounting ledger_, memungkinkan pembukuan otomatis tanpa membingungkan operator lapangan.
-- **Rekomendasi Tegas**: **Transaksi Operasional Dipisah dari Jurnal Akuntansi**. Seluruh peristiwa bisnis (`transactions`, `project_disbursements`, `member_dues`) dicatat pada tabel modul domain, dan saat berstatus disahkan, memicu pembentukan `journal_entries` dan `journal_entry_lines` (debit == credit) yang mereferensikan sumbernya via `source_type` dan `source_id`.
+- **Rekomendasi Tegas**: **Transaksi Operasional Dipisah dari Jurnal Akuntansi**. Seluruh peristiwa bisnis (`financial_transactions`, `project_disbursements`, `member_dues`) dicatat pada tabel modul domain, dan saat berstatus disahkan, memicu pembentukan `journal_entries` dan `journal_lines` (debit == credit) yang mereferensikan sumbernya via `source_type` dan `source_id`.
 - **Status**: **DIPUTUSKAN**. _(Rujukan: `docs/database/04a-keuangan-inti-jurnal.md` & `05-proyek-dan-kegiatan.md`)_.
 
 ---
@@ -122,7 +122,7 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 014 s.d. 022 untuk
 - **Trade-off**:
   Opsi 1 rentan penomoran kembar dan penimpaan data draf. Opsi 2 menyebabkan deadlock massal dan degradasi performa transaksi. Opsi 3 menyeimbangkan integritas data dengan performa tinggi.
 - **Rekomendasi Tegas**:
-  1. **Optimistic Locking**: Seluruh entitas dokumen mutasi (`journal_entries`, `transactions`, `projects`) memuat kolom `version INT NOT NULL DEFAULT 1`. Pembaruan wajib memverifikasi `version` sama dan menaikkannya $+1$. Jika terjadi benturan konkurensi, sistem mengembalikan galat HTTP 409 Conflict.
+  1. **Optimistic Locking**: Seluruh entitas dokumen mutasi (`journal_entries`, `financial_transactions`, `projects`) memuat kolom `version INT NOT NULL DEFAULT 1`. Pembaruan wajib memverifikasi `version` sama dan menaikkannya $+1$. Jika terjadi benturan konkurensi, sistem mengembalikan galat HTTP 409 Conflict.
   2. **Pessimistic Row Lock untuk Penomoran Dokumen**: Kueri alokasi nomor urut sequence wajib menggunakan `SELECT ... FOR UPDATE` dalam transaksi database terisolasi.
   3. **Tingkat Isolasi `REPEATABLE READ` untuk Posting Jurnal**: Eksekusi pembukuan status `POSTED` dan penutupan buku tahunan dijalankan pada tingkat isolasi `REPEATABLE READ` guna mencegah fenomena _phantom read_ atau pergeseran saldo di tengah agregasi.
 - **Status**: **DIPUTUSKAN**. _(Rujukan: `docs/database/01-conventions.md` Bagian 5)_.
