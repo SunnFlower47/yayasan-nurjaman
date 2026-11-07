@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.50.1",
-    "@types/node": "22.13.5",
+    "@types/node": "26.6.6",
     "@types/qrcode": "^1.5.6",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
