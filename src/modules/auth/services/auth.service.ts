@@ -10,6 +10,7 @@ import { passwordService } from "./password.service";
 import { rateLimitService } from "./rate-limit.service";
 import { sessionService } from "./session.service";
 import { validatePasswordPolicy } from "../helpers/password-validator";
+import { writeAudit } from "@/modules/audit";
 import type {
   LoginCredentials,
   LoginResult,
@@ -160,6 +161,15 @@ export class AuthService {
       ip: input.userIp,
       userAgent: input.userAgent,
       details: { reason: "PASSWORD_CHANGED_REVOKE_OTHERS" },
+    });
+
+    await writeAudit({
+      actorUserId: user.id,
+      action: "auth.change_password",
+      entityType: "user",
+      entityId: user.id,
+      before: { mustChangePassword: user.mustChangePassword },
+      after: { mustChangePassword: false },
     });
 
     return { success: true };

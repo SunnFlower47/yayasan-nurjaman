@@ -15,6 +15,7 @@ export function getPrismaClient(): PrismaClient {
 }
 
 export const db = getPrismaClient();
+export const prisma = db;
 
 /**
  * Memeriksa status konektivitas basis data PostgreSQL via Prisma Client (SELECT 1).
