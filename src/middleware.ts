@@ -61,6 +61,7 @@ function applySecurityHeaders(
   const pathname = request.nextUrl.pathname;
   if (
     pathname.startsWith("/admin") ||
+    pathname.startsWith("/ganti-password") ||
     pathname.startsWith("/api") ||
     pathname.startsWith("/dev")
   ) {
@@ -70,6 +71,30 @@ function applySecurityHeaders(
 
 export function middleware(request: NextRequest) {
   const nonce = generateNonce();
+  const pathname = request.nextUrl.pathname;
+  const isProd = process.env.NODE_ENV === "production";
+  const cookieName = isProd ? "__Host-session" : "session";
+  const hasSessionCookie = Boolean(request.cookies.get(cookieName)?.value);
+
+  // Pengalihan UX Berdasarkan Keberadaan Cookie Sesi (ADR-004)
+  if (
+    !hasSessionCookie &&
+    (pathname.startsWith("/admin") || pathname.startsWith("/ganti-password"))
+  ) {
+    const loginUrl = new URL("/masuk", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    applySecurityHeaders(redirectResponse, request, nonce);
+    return redirectResponse;
+  }
+
+  if (hasSessionCookie && pathname === "/masuk") {
+    const adminUrl = new URL("/admin", request.url);
+    const redirectResponse = NextResponse.redirect(adminUrl);
+    applySecurityHeaders(redirectResponse, request, nonce);
+    return redirectResponse;
+  }
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
 

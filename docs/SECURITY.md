@@ -15,7 +15,7 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 ### 1.1 Aset Kritis yang Dilindungi
 
 1. **Catatan Keuangan & Akuntansi (ISAK 35)**: Jurnal umum, saldo kas/bank, laporan realisasi dana terikat dan tidak terikat. Manipulasi data keuangan dapat memicu pelanggaran hukum yayasan.
-2. **Data Pribadi (PII)**: Nomor Induk Kependudukan (NIK), alamat, nomor telepon, dan data keluarga anggota yayasan. Wajib mematuhi UU Pelindungan Data Pribadi (UU PDP).
+2. **Data Pribadi (PII)**: Nomor Induk Kependudukan (NIK), alamat, nomor telepon, dan data keluarga anggota yayasan (rujukan, PERLU VERIFIKASI: UU Pelindungan Data Pribadi / UU PDP).
 3. **Data Perpajakan**: Konfigurasi tarif pajak, riwayat pemotongan PPh 21/23, dan arsip bukti potong.
 4. **Kredensial & Kunci Sesi**: Kata sandi pengurus, kunci TOTP 2FA, token otentikasi, dan secret key lingkungan.
 5. **Jejak Audit (_Audit Trail_)**: Log aktivitas sistem sebagai bukti integritas yang tidak boleh dapat diubah (_tamper-proof_).
@@ -48,10 +48,14 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 ### 2.1 Hashing & Kebijakan Kata Sandi
 
 - **Algoritma**: Wajib menggunakan **Argon2id** (memory: 64MB / 65536 KB, iterations: 3, parallelism: 4) atau **bcrypt** dengan cost factor minimal 12.
-- **Kekuatan Sandi**:
-  - Panjang minimal: **12 karakter**.
-  - Wajib kombinasi huruf besar, huruf kecil, angka, dan simbol khusus.
-  - Pengecekan daftar hitam kata sandi umum (_common passwords blocklist_).
+- **Kekuatan Sandi (Keputusan Pemilik)**:
+  - Panjang minimal: **8 karakter** (`PASSWORD_MIN_LENGTH = 8`), didefinisikan terpusat sebagai konstanta tunggal di `src/modules/auth/constants.ts` dan digunakan seragam di form ganti password, seed admin, dan seluruh rangkaian pengujian.
+  - Batas maksimum: minimal **128 karakter** (`PASSWORD_MAX_LENGTH = 128`), guna mengizinkan penggunaan _passphrase_ panjang tanpa pembatasan yang menghambat pengguna.
+  - **Syarat Keamanan Pengimbang yang Wajib Dipertahankan**:
+    1. _Common Passwords Blocklist_: Penolakan mutlak terhadap daftar ~10.000 kata sandi pasaran lokal (`common-passwords.txt`).
+    2. _Anti-Identity Collision_: Kata sandi dilarang sama atau memuat username akun.
+    3. _Anti-Email Collision_: Kata sandi dilarang sama atau memuat alamat email atau prefix email akun (min. 3 karakter).
+    4. _Brute Force Defense_: Rate limiting 5 kali kegagalan per 15 menit dengan _lockout_ progresif dan timing attack defense (dummy hash).
 
 ### 2.2 Perlindungan Terhadap Serangan _Brute Force_ & Rate Limiting
 
@@ -182,11 +186,19 @@ Header respons HTTP untuk seluruh rute `/admin/*` dan `/api/*` menyematkan:
 
 ## 7. Perlindungan Data Sensitif & Jejak Audit (_Audit Trail_)
 
-### 7.1 Enkripsi Data Pribadi saat Istirahat (_Encryption at Rest_)
+### 7.1 Enkripsi Data Pribadi saat Istirahat (_Encryption at Rest_) & Konvensi Multi-Kunci
 
 - Kolom basis data yang memuat identitas kependudukan (NIK anggota), nomor rekening bank, dan rahasia TOTP 2FA wajib dienkripsi di level aplikasi sebelum disimpan ke PostgreSQL menggunakan **AES-256-GCM**.
-- Kunci enkripsi aplikasi disimpan dalam variabel lingkungan `ENCRYPTION_SECRET` (32 bytes).
-- **Invarian Migrasi Mesin**: Saat memindahkan sistem antar-mesin (VPS $\leftrightarrow$ Laptop), nilai `ENCRYPTION_SECRET` pada `.env` **WAJIB DISALIN PERSIS SAMA**. Tanpa kunci master yang identik, data terenkripsi tidak akan bisa didekripsi selamanya (_permanent data loss_).
+- **Key Ring Enkripsi Aplikasi (`ENCRYPTION_KEY_ACTIVE_ID` & `ENCRYPTION_KEYS`)**:
+  - Format penyimpanan ciphertext: prefix key ID, nonce 12-byte, ciphertext terenkripsi, dan tag autentikasi 16-byte.
+  - Mendukung rotasi: `ENCRYPTION_KEY_ACTIVE_ID` untuk enkripsi data baru, dan seluruh daftar kunci historis dalam `ENCRYPTION_KEYS` untuk mendekripsi data lama.
+- **Kunci Blind Index Terpisah (`BLIND_INDEX_SECRET`)**:
+  - Kolom pencarian rahasia seperti `nik_blind_index` dihasilkan menggunakan HMAC-SHA256 dengan kunci rahasia `BLIND_INDEX_SECRET` terpisah dari kunci enkripsi AES.
+- **Invarian Mutlak Migrasi Mesin (VPS $\leftrightarrow$ Laptop)**:
+  - Saat memindahkan sistem antar-mesin, **SELURUH KUNCI KRIPTOGRAFI** (`ENCRYPTION_KEY_ACTIVE_ID`, seluruh kamus `ENCRYPTION_KEYS`, dan `BLIND_INDEX_SECRET`) pada `.env` **WAJIB DISALIN PERSIS SAMA SECARA LENGKAP**.
+  - **Bahaya Fatal**:
+    1. Kehilangan kunci enkripsi: data sensitif terenkripsi **TIDAK BISA DIBACA SELAMANYA (_PERMANENT DATA LOSS_)**.
+    2. Kehilangan / perubahan kunci blind index: pencarian anggota via NIK dan deteksi integritas keunikan duplikasi data anggota akan rusak total (_search failure & duplicate integrity breach_).
 
 ### 7.2 Penyamaran Data Antarmuka (_Data Masking_)
 

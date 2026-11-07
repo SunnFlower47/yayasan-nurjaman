@@ -2,7 +2,7 @@
 
 ## Yayasan Nurjaman Bongas Purwakarta
 
-Dokumen ini adalah cetak biru komprehensif pengembangan sistem web resmi dan panel administrasi terpadu Yayasan Nurjaman Bongas Purwakarta. Dokumen ini menjadi peta jalan tunggal (_single source of truth_) yang memandu urutan fase, lingkup kerja, checklist keamanan, dan pengujian kasus negatif.
+Dokumen ini adalah cetak biru komprehensif pengembangan sistem web resmi dan panel administrasi terpadu Yayasan Nurjaman Bongas Purwakarta. Dokumen ini menjadi peta jalan tunggal (_single source of truth_) yang memandu urutan fase, lingkup kerja, checklist keamanan, dan pengujian kasus negatif. Rincian teknis lengkap tiap fase terorganisasi secara modular di [`docs/master-plan/`](file:///docs/master-plan/00-index.md).
 
 ---
 
@@ -41,7 +41,8 @@ Sistem memiliki 7 tingkatan peran dengan pemisahan tugas (_segregation of duties
 ```mermaid
 flowchart TD
     F0["Fase 0: Setup & Fondasi (Selesai)"] --> F05["Fase 0.5: Pengetatan Aturan & Keamanan (Selesai)"]
-    F05 --> F07["Fase 0.7: Stack Docker Lengkap Dev & Prod (Berikutnya)"]
+    F05 --> F06["Fase 0.6: Desain Basis Data & Arsitektur (Selesai dgn catatan)"]
+    F06 --> F07["Fase 0.7: Stack Docker Lengkap Dev & Prod (Aktif Berjalan)"]
     F07 --> F1["Fase 1: Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit"]
     F1 --> F2["Fase 2: Pengaturan Sistem, Profil Admin & Manajemen User"]
     F2 --> F3["Fase 3: Manajemen Anggota & Data Masking"]
@@ -58,270 +59,98 @@ flowchart TD
 
 ## D. Rincian Fase Pengembangan
 
+Rincian lengkap ruang lingkup teknis, checklist keamanan terverifikasi, dan checklist kasus negatif per fase diorganisasikan pada berkas modular di [`docs/master-plan/`](file:///docs/master-plan/00-index.md):
+
 ### Fase 0: Setup Fondasi Proyek, Tooling & Konfigurasi (Status: Selesai)
 
-- **Tujuan**: Membangun fondasi arsitektur modular, tooling, dan sistem changelog.
-- **Ruang Lingkup Selesai**:
-  - Inisialisasi Next.js 15, TypeScript strict (`noUncheckedIndexedAccess`), Tailwind, ESLint, Prettier, Husky.
-  - Sampling token warna resmi dari logo (`#29c668`, `#ffff00`, `#020202`, `#ff4745`).
-  - Halaman dev-only `/dev/tokens`, route `/api/health`, placeholder `/`.
-  - Sistem changelog `pnpm changelog:new` dan pre-commit check.
-  - Entri changelog `0001-2026-11-04-setup-fondasi-proyek.md`.
-
----
+Inisialisasi Next.js 15, TypeScript strict, Tailwind, ESLint, Prettier, Husky, token warna logo, dev routes `/dev/tokens`, dan changelog `0001`.
+👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-0-setup-fondasi-proyek-tooling--konfigurasi-status-selesai)_
 
 ### Fase 0.5: Memperketat Aturan, Standar Kode & Fondasi Keamanan (Status: Selesai)
 
-- **Tujuan**: Menegakkan batas kualitas kode, arsitektur berlapis, dan konfigurasi keamanan tanpa membuat fitur domain.
-- **Ruang Lingkup Selesai**:
-  - [x] Audit komprehensif hasil Fase 0 (inspeksi git history, port postgres 127.0.0.1, audit dependency, perbaikan CVE Next.js & PostCSS).
-  - [x] Dokumen standar rekayasa: `docs/CODE-STANDARDS.md` dan `docs/SECURITY.md`.
-  - [x] Pembaruan dokumen lama: `AGENTS.md`, `WORKING-RULES.md`, `MASTER-PLAN.md`, `ARCHITECTURE.md`, `UI-UX-RULES.md`.
-  - [x] Penegakan tooling otomatis: ESLint max-lines 250 (error 300), complexity 10, no-console, no-any, check-layers AST script, scan-secrets hook.
-  - [x] Baseline keamanan konfigurasi: Security headers & CSP nonce via `src/middleware.ts`, `src/app/robots.ts` (disallow admin/api), `.dockerignore`, `docker-compose.prod.example.yml`, `.github/workflows/ci.yml`.
-  - [x] Uji E2E Playwright untuk security headers.
-  - [x] Entri changelog terpisah (`0002` s.d. `0006`).
-- **Checklist Keamanan Fase 0.5**:
-  - [x] `pnpm secrets:scan` bersih dari kunci rahasia.
-  - [x] `node scripts/check-layers.mjs` mendeteksi 0 pelanggaran batas lapis.
-  - [x] Port database terikat ke 127.0.0.1; user runner Docker non-root.
-  - [x] Header X-Frame-Options: DENY, X-Content-Type-Options: nosniff, CSP, dan HSTS aktif.
-- **Checklist Pengujian Kasus Negatif Fase 0.5**:
-  - [x] Uji coba commit file staged dengan rahasia tiruan ditolak oleh pre-commit hook.
-  - [x] Uji coba impor `@prisma/client` pada komponen UI ditolak oleh linter dan check-layers.
-  - [x] Uji coba akses rute `/dev/tokens` pada mode `NODE_ENV=production` mengembalikan HTTP 404 Not Found.
+Audit Fase 0, `CODE-STANDARDS.md`, `SECURITY.md`, AST linter check-layers, scan-secrets hook, CSP nonce, dan Playwright E2E headers test (`0002`-`0006`).
+👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-05-memperketat-aturan-standar-kode--fondasi-keamanan-status-selesai)_
 
----
+### Fase 0.6: Desain Basis Data & Arsitektur Docker-First (Status: Selesai dengan catatan)
 
-### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Belum Dimulai)
+Spesifikasi 70 tabel 8 modul, ADR-008 s.d. ADR-023, 11-migration-plan (expand-contract), 14-traceability, 15-diff-vs-draf, 99-open-questions (`0007`-`0014`). Sisanya didelegasikan ke fase masing-masing: pemetaan auth tipis ke awal Fase 1, 8 skenario keuangan & uji invarian DDL tabel asli ke Fase 4, serta 10 kueri laporan ISAK 35 ke Fase 7.
+👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-06-desain-basis-data--arsitektur-docker-first-status-selesai-dengan-catatan)_
 
-- **Tujuan**: Mengimplementasikan seluruh berkas orkestrasi Docker untuk lingkungan pengembangan (dev) dan produksi (prod) sesuai spesifikasi ADR-008 dan `docs/11-migration-plan.md`.
-- **Ruang Lingkup**:
-  - [ ] Implementasi berkas `docker-compose.yml` untuk development (hot reload Next.js, port postgres dev terikat 127.0.0.1).
-  - [ ] Implementasi berkas `docker-compose.prod.yml` untuk produksi (internal bridge network `yayasan_internal`, port DB & app tertutup dari host, resource limits).
-  - [ ] Konfigurasi container `reverse-proxy` (Caddy dengan otomatisasi TLS Let's Encrypt / ZeroSSL dan security headers).
-  - [ ] Konfigurasi container `migrate` sekali jalan (`prisma migrate deploy`).
-  - [ ] Konfigurasi container `backup-worker` (dengan client PostgreSQL 17, skrip backup otomatis, validasi versi, dan kredensial least privilege).
-  - [ ] Konfigurasi multi-stage `Dockerfile` dengan dukungan multi-arsitektur (`linux/amd64` dan `linux/arm64`).
-  - [ ] Uji coba simulasi pemindahan mesin (_cross-machine transfer drill_) dari lokal ke container staging.
-- **Checklist Keamanan Fase 0.7**:
-  - [ ] Port basis data dan aplikasi TIDAK dipublikasikan ke host publik di produksi (mencegah bypass firewall UFW di VPS Linux).
-  - [ ] Port 80 dan 443 hanya dipublikasikan oleh reverse proxy.
-  - [ ] Kunci rahasia dan environment variables tidak pernah dibakar ke dalam image Docker layer.
-  - [ ] Seluruh container produksi berjalan sebagai user non-root dengan opsi `no-new-privileges: true`.
-- **Checklist Pengujian Kasus Negatif Fase 0.7**:
-  - [ ] Koneksi langsung dari luar host ke port 5432 atau 3000 ditolak / unreachable.
-  - [ ] Simulasi kegagalan layanan `migrate` membatalkan deployment tanpa menghentikan container aplikasi lama.
-  - [ ] Simulasi pemulihan backup dengan versi PostgreSQL yang tidak kompatibel otomatis ditolak oleh validator worker.
+### Fase 0.7: Stack Docker Lengkap (Dev dan Prod) (Status: Berjalan)
 
----
+Orkestrasi Docker Compose dev (hot reload) & prod (`yayasan_internal`, Caddy TLS otomatis port 80/443 tunggal, Postgres Debian bookworm, migrator sekali jalan, backup worker terenkripsi lokal/S3, buildx multi-arch).
+👉 _Spesifikasi lengkap: [`docs/master-plan/01-fondasi-dan-setup.md`](file:///docs/master-plan/01-fondasi-dan-setup.md#fase-07-stack-docker-lengkap-dev-dan-prod-status-berjalan)_
 
 ### Fase 1: Fondasi Admin: Autentikasi, 2FA, Sesi, RBAC, Layout Admin & Audit Log
 
-- **Tujuan**: Menyiapkan akses masuk aman, hierarki izin pengguna, shell layout admin, dan audit log inti.
-- **Ruang Lingkup**:
-  - Skema tabel User, Session, Account, Role, Permission, dan AuditLog di Prisma.
-  - Autentikasi berbasis password ter-hash Argon2id, cookie sesi aman (`HttpOnly`, `SameSite=Lax`, `Secure`, prefix `__Host-`).
-  - Otentikasi dua faktor (TOTP RFC 6238) wajib untuk Super Admin, Ketua, dan Bendahara.
-  - Sistem verifikasi izin server-side (`requireUser()`, `requirePermission()`) pada setiap Server Action.
-  - Shell layout admin (Sidebar responsif, Header pengurus, Breadcrumb, Dark mode).
-  - Pustaka komponen atomik bersama di `src/components/ui/` dan `src/components/shared/` dasar.
-  - Service Audit Log append-only terpusat.
-- **Checklist Keamanan**:
-  - [ ] Rate limiting login (maks 5 kegagalan per 15 menit per IP).
-  - [ ] Session invalidation instan saat logout dan saat pergantian password.
-  - [ ] Otorisasi server-side aktif pada seluruh Server Action admin (bukan hanya middleware).
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Permintaan Server Action tanpa sesi ditolak (HTTP 401 Unauthorized).
-  - [ ] Pengguna tanpa hak akses ditolak saat memanggil aksi administratif (HTTP 403 Forbidden).
-  - [ ] Login dengan 6 kali password salah diblokir sementara (HTTP 429 Too Many Requests).
-
----
+Better Auth domain mapping, Argon2id, cookie `__Host-`, 2FA TOTP RFC 6238, `requirePermission()` server action, layout admin responsif, audit trail.
+👉 _Spesifikasi lengkap: [`docs/master-plan/02-admin-dan-kelembagaan.md`](file:///docs/master-plan/02-admin-dan-kelembagaan.md#fase-1-fondasi-admin-autentikasi-2fa-sesi-rbac-layout-admin--audit-log)_
 
 ### Fase 2: Pengaturan Sistem, Profil Yayasan (Sisi Admin) & Manajemen Pengguna
 
-- **Tujuan**: Memfasilitasi konfigurasi identitas kelembagaan dinamis dan manajemen hak akses pengguna oleh Super Admin.
-- **Ruang Lingkup**:
-  - Skema tabel FoundationProfile, LegalDocument, OrganizationStructure, SystemSettings.
-  - Antarmuka admin manajemen profil: nama yayasan, visi-misi, kontak, alamat Bongas, nomor legalitas SK Kemenkumham, rekening bank resmi.
-  - Manajemen pengguna internal: undang pengurus baru, penugasan role, reset password, dan status aktif/nonaktif.
-- **Checklist Keamanan**:
-  - [ ] Hanya Super Admin yang berhak memodifikasi pengaturan sistem dan role pengguna.
-  - [ ] Otentikasi ulang (_step-up auth_) saat mengubah peran pengguna menjadi Super Admin/Bendahara.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Staf biasa mencoba mengakses route/action manajemen user ditolak (403).
-  - [ ] Pembaruan profil dengan data malformasi (email/URL tidak valid) ditolak skema Zod (422).
-
----
+Profil dinamis yayasan (SK Kemenkumham, rekening resmi), manajemen struktur pengurus, undangan admin, role assignment, step-up auth.
+👉 _Spesifikasi lengkap: [`docs/master-plan/02-admin-dan-kelembagaan.md`](file:///docs/master-plan/02-admin-dan-kelembagaan.md#fase-2-pengaturan-sistem-profil-yayasan-sisi-admin--manajemen-pengguna)_
 
 ### Fase 3: Manajemen Anggota & Data Masking
 
-- **Tujuan**: Mengelola direktori anggota, dewan pengurus, relawan, dan donatur tetap yayasan dengan perlindungan privasi.
-- **Ruang Lingkup**:
-  - Skema database Member, MemberCategory, MemberHistory.
-  - Form pendataan anggota dengan validasi NIK dan enkripsi at-rest AES-256-GCM.
-  - Antarmuka data table anggota dengan paginasi, pencarian, dan filter kategori.
-  - Fitur penyamaran data (_data masking_) untuk NIK dan kontak pada tabel umum.
-  - Ekspor data anggota berizin khusus dengan pencatatan audit log otomatis.
-- **Checklist Keamanan**:
-  - [ ] Data NIK tersimpan terenkripsi di PostgreSQL.
-  - [ ] Penyamaran data NIK aktif secara default di antarmuka (`3201************`).
-  - [ ] Ekspor data dibatasi hanya untuk Sekretaris dan Super Admin.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Percobaan injeksi SQL melalui parameter filter/search ditolak Prisma parameterized query.
-  - [ ] Permintaan pembukaan data NIK tanpa izin khusus ditolak (403).
-
----
+Direktori anggota/relawan, NIK opsional terenkripsi AES-256-GCM + HMAC blind index, masking UI, ekspor data audit trail. Default non-publik.
+👉 _Spesifikasi lengkap: [`docs/master-plan/03-anggota-dan-keuangan.md`](file:///docs/master-plan/03-anggota-dan-keuangan.md#fase-3-manajemen-anggota--data-masking)_
 
 ### Fase 4: Keuangan Inti & Akuntansi Nirlaba ISAK 35
 
-- **Tujuan**: Membangun mesin pencatatan transaksi jurnal berimbang ganda dan pengelolaan kas/bank.
-- **Ruang Lingkup**:
-  - Skema database ChartOfAccount (COA), JournalEntry, JournalLine, CashAccount, AccountingPeriod.
-  - Bagan Akun Standar Entitas Nonlaba (Aset Neto Dengan & Tanpa Pembatasan).
-  - Form input kas masuk/keluar & jurnal umum dengan validasi real-time Debit = Kredit.
-  - Siklus transaksi: DRAFT → PENDING APPROVAL → POSTED.
-  - Mekanisme pembatalan VOID (jurnal pembalik nirubah, transaksi posted tidak dapat diedit).
-  - Fitur Penguncian Periode / Tutup Buku Bulanan & Tahunan.
-  - Alur Maker-Checker untuk permohonan pencairan kas.
-- **Checklist Keamanan**:
-  - [ ] Invarian akuntansi mutlak: Debit == Kredit ditegakkan di Service dan Transaction level.
-  - [ ] Anti-self-approval: Pembuat draf dilarang menyetujui transaksinya sendiri.
-  - [ ] Transaksi berstatus POSTED terkunci dari perubahan atau penghapusan fisik.
-  - [ ] Rekaman mutasi keuangan selalu mencatat audit log append-only.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Transaksi jurnal dengan selisih Debit dan Kredit Rp 1 ditolak keras (422 Unprocessable Entity).
-  - [ ] Permintaan edit/delete pada transaksi `POSTED` ditolak (400 Bad Request).
-  - [ ] Pembuatan jurnal pada periode akuntansi berstatus `CLOSED` ditolak (400 Bad Request).
-
----
+Chart of Accounts nirlaba (Aset Neto Terikat & Bebas), penjurnalan Debit=Kredit real-time, status DRAFT/POSTED/VOID, tutup buku, maker-checker kas.
+👉 _Spesifikasi lengkap: [`docs/master-plan/03-anggota-dan-keuangan.md`](file:///docs/master-plan/03-anggota-dan-keuangan.md#fase-4-keuangan-inti--akuntansi-nirlaba-isak-35)_
 
 ### Fase 5: Proyek, Anggaran & Keterkaitan Keuangan
 
-- **Tujuan**: Mengaitkan program kerja sosial dengan alokasi pos keuangan dan pelacakan serapan anggaran.
-- **Ruang Lingkup**:
-  - Skema database Project, ProjectBudget, ProjectDisbursement.
-  - Rencana Anggaran Biaya (RAB) per proyek sosial kemasyarakatan di Purwakarta.
-  - Integrasi otomatis: persetujuan pencairan dana proyek langsung membentuk jurnal kas keluar di modul keuangan.
-  - Pelacakan serapan anggaran (Pagu vs Realisasi vs Sisa) dengan indikator batas.
-- **Checklist Keamanan**:
-  - [ ] Pencairan dana proyek memerlukan otorisasi Ketua Yayasan atau Bendahara.
-  - [ ] Validasi pagu: sistem menolak atau memberi peringatan keras saat pengeluaran melebihi sisa anggaran.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Pengajuan pencairan pada proyek berstatus `COMPLETED` atau `CANCELLED` ditolak (400).
-  - [ ] Permintaan pencairan dana oleh akun non-pengurus proyek ditolak (403).
-
----
+RAB program sosial Purwakarta, pencairan dana otomatis menjurnal kas keluar, pelacakan serapan anggaran pagu vs realisasi vs sisa.
+👉 _Spesifikasi lengkap: [`docs/master-plan/04-proyek-dan-pajak.md`](file:///docs/master-plan/04-proyek-dan-pajak.md#fase-5-proyek-anggaran--keterkaitan-keuangan)_
 
 ### Fase 6: Perpajakan Berkonfigurasi Dinamis
 
-- **Tujuan**: Mengelola perhitungan pemotongan pajak dan penerbitan bukti potong tanpa hardcode tarif.
-- **Ruang Lingkup**:
-  - Skema database TaxType, TaxRate (berversi tanggal berlaku `effective_date` & `expiry_date`), dan TaxWithholding.
-  - Antarmuka admin master tarif pajak (PPh 21, PPh 23, PPh Final).
-  - Perhitungan otomatis potongan pajak pada pengeluaran honor/sewa/jasa di modul keuangan.
-  - Pembuatan dan pencetakan dokumen Bukti Potong Pajak standar.
-- **Checklist Keamanan**:
-  - [ ] Tarif pajak dibaca dinamis berdasarkan tanggal transaksi, bukan dari kode program.
-  - [ ] Perubahan tarif pajak memerlukan otentikasi ulang Bendahara.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Perhitungan pajak dengan tanggal di luar rentang tanggal berlaku mengembalikan galat konfigurasi (422).
-  - [ ] Pengubahan tarif pajak lampau yang telah dipakai transaksi posted ditolak (400).
-
----
+Master tarif pajak PPh 21/23/Final berversi rentang tanggal (GiST non-overlapping), pemotongan otomatis transaksi, cetak Bukti Potong standar.
+👉 _Spesifikasi lengkap: [`docs/master-plan/04-proyek-dan-pajak.md`](file:///docs/master-plan/04-proyek-dan-pajak.md#fase-6-perpajakan-berkonfigurasi-dinamis)_
 
 ### Fase 7: Pelaporan Keuangan ISAK 35, Dashboard & Ekspor Dokumen
 
-- **Tujuan**: Menyajikan laporan keuangan formal nirlaba yang siap diaudit dan dipresentasikan ke Pembina/Donatur.
-- **Ruang Lingkup**:
-  - Generator Laporan Posisi Keuangan (Neraca Nirlaba).
-  - Generator Laporan Penghasilan Komprehensif (Laporan Aktivitas: Terikat & Tidak Terikat).
-  - Generator Laporan Arus Kas (Metode Langsung/Tidak Langsung) & Laporan Perubahan Aset Neto.
-  - Dashboard analitik keuangan untuk Pembina dan Ketua Yayasan.
-  - Format cetak dokumen standar resmi (A4, kop surat yayasan, kolom tanda tangan pejabat).
-  - Ekspor laporan ke PDF dan lembar kerja Excel bertipe presisi.
-- **Checklist Keamanan**:
-  - [ ] Akses laporan keuangan dibatasi hanya untuk peran Pembina, Ketua, Pengawas, dan Bendahara.
-  - [ ] Rekonsiliasi matematis: Neraca wajib seimbang antara Aset dengan Liabilitas + Aset Neto.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Editor Konten atau Staf Lapangan mencoba mengakses laporan ISAK 35 ditolak (403).
-  - [ ] Ekspor laporan pada rentang tanggal tidak valid (tanggal awal > akhir) ditolak Zod (422).
-
----
+Laporan Posisi Keuangan, Aktivitas, Arus Kas, Perubahan Aset Neto, dashboard analitik Pembina/Ketua, ekspor PDF/Excel presisi.
+👉 _Spesifikasi lengkap: [`docs/master-plan/05-pelaporan-dan-cms.md`](file:///docs/master-plan/05-pelaporan-dan-cms.md#fase-7-pelaporan-keuangan-isak-35-dashboard--ekspor-dokumen)_
 
 ### Fase 8: Manajemen Konten Admin (CMS) & Backup/Restore Sistem
 
-- **Tujuan**: Fasilitas penyusunan konten publik secara mandiri dari admin panel serta perlindungan integritas data.
-- **Ruang Lingkup**:
-  - Skema database Article, ArticleCategory, MediaGallery, SystemBackup.
-  - Admin editor berita berbasis Tiptap dengan sanitasi HTML ketat.
-  - Manajemen galeri foto kegiatan dengan optimasi gambar dan verifikasi _magic bytes_.
-  - Modul backup basis data otomatis (dump PostgreSQL terkompresi dan terenkripsi).
-  - Mekanisme pemulihan data (_restore verification drill_).
-- **Checklist Keamanan**:
-  - [ ] Seluruh input teks kaya disanitasi ketat di server (larangan script, iframe asing, handler inline).
-  - [ ] Berkas unggahan diverifikasi ekstensi, MIME, dan biner magic bytes; nama berkas diacak UUIDv4.
-  - [ ] Berkas dump backup terenkripsi dan disimpan di volume terisolasi.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Pengunggahan berkas executable (.exe/.sh/.php) yang di-rename menjadi .jpg ditolak pemeriksaan magic bytes (400).
-  - [ ] Penyisipan payload XSS `<script>alert(1)</script>` pada artikel otomatis dibersihkan oleh sanitizer.
-
----
+Editor Tiptap tersanitasi ketat, galeri magic bytes + StorageProvider, backup dump terenkripsi offline + offsite S3, restore verification drill.
+👉 _Spesifikasi lengkap: [`docs/master-plan/05-pelaporan-dan-cms.md`](file:///docs/master-plan/05-pelaporan-dan-cms.md#fase-8-manajemen-konten-admin-cms--backuprestore-sistem)_
 
 ### Fase 9: Website Publik, Transparansi & Optimasi SEO
 
-- **Tujuan**: Membuka representasi digital yayasan kepada publik Purwakarta dan calon donatur secara profesional.
-- **Ruang Lingkup**:
-  - Halaman Beranda editorial dengan program unggulan dan dokumentasi resmi.
-  - Halaman Profil Lembaga, Visi Misi, Sejarah, Legalitas, dan Struktur Pengurus (mengonsumsi data Fase 2).
-  - Halaman Berita & Galeri Kegiatan (mengonsumsi data Fase 8).
-  - Halaman Transparansi Akuntabilitas (menampilkan ringkasan laporan ISAK 35 teragregasi yang telah disetujui Ketua).
-  - Halaman Kontak & Lokasi Sekretariat Bongas, Purwakarta.
-  - Optimasi SEO, metadata OpenGraph, sitemap.xml, dan skor performa Core Web Vitals tinggi.
-- **Checklist Keamanan**:
-  - [ ] Halaman publik bersifat murni _read-only_; formulir kontak dibatasi rate limiting ketat dan captcha/honeypot.
-  - [ ] Data privat pengurus/anggota (NIK, alamat rumah pribadi, nomor rekening personal) tidak pernah diekspos ke publik.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Pengiriman formulir kontak dengan spam berulang ditolak rate limiting (429).
-  - [ ] Akses rute admin tersembunyi dari situs publik menghasilkan 401/404 tanpa kebocoran informasi stack trace.
-
----
+Website profil resmi, berita/galeri kegiatan, halaman transparansi laporan ISAK 35 agregat, kontak anti-spam, sitemap, Core Web Vitals.
+👉 _Spesifikasi lengkap: [`docs/master-plan/06-publik-dan-rilis.md`](file:///docs/master-plan/06-publik-dan-rilis.md#fase-9-website-publik-transparansi--optimasi-seo)_
 
 ### Fase 10: Hardening Akhir, Pentest Independen & Rilis Produksi
 
-- **Tujuan**: Menguji ketahanan sistem secara komprehensif, audit akuntansi final, dan penyebaran ke server produksi.
-- **Ruang Lingkup**:
-  - Uji penetrasi independen (_simulated grey-box penetration testing_): pengujian eskalasi hak akses, bypass maker-checker, fuzzer input.
-  - Audit rekonsiliasi akuntansi akhir bersama akuntan yayasan.
-  - Konfigurasi produksi: Docker Compose produksi, Caddy reverse proxy dengan TLS 1.3 otomatis, backup cron off-site.
-  - Dokumentasi serah terima sistem dan buku panduan operasional pengurus.
-- **Checklist Keamanan**:
-  - [ ] Seluruh temuan pentest berkategori High/Medium telah diselesaikan.
-  - [ ] Audit ketergantungan `pnpm security:audit` bebas kerentanan High/Critical.
-  - [ ] Uji skenario pemulihan bencana (_disaster recovery drill_) berhasil membangkitkan data dari dump cadangan.
-- **Checklist Pengujian Kasus Negatif**:
-  - [ ] Fuzzing payload terhadap seluruh endpoint tidak menyebabkan server crash atau memory exhaustion.
-  - [ ] Pengujian kegagalan koneksi database menghasilkan respons HTTP 503 yang aman tanpa ekspos kredensial.
+Simulated grey-box pentest, rekonsiliasi audit akuntan yayasan, deployment VPS Caddy TLS 1.3 otomatis, disaster recovery drill, serah terima.
+👉 _Spesifikasi lengkap: [`docs/master-plan/06-publik-dan-rilis.md`](file:///docs/master-plan/06-publik-dan-rilis.md#fase-10-hardening-akhir-pentest-independen--rilis-produksi)_
 
 ---
 
 ## E. Tabel Status Fase Pengerjaan
 
-| Fase         | Nama Fase & Ruang Lingkup                           | Status        | ID Changelog Terkait           |
-| :----------- | :-------------------------------------------------- | :------------ | :----------------------------- |
-| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens       | **Selesai**   | `[ID: 0001]`                   |
-| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan | **Selesai**   | `[ID: 0002]` s.d. `[ID: 0006]` |
-| **Fase 0.7** | Stack Docker Lengkap (Dev dan Prod)                 | Belum Dimulai | `[ID: 0007]` (Desain)          |
-| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout & Audit Log  | Belum Dimulai | -                              |
-| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User    | Belum Dimulai | -                              |
-| **Fase 3**   | Manajemen Anggota & Data Masking                    | Belum Dimulai | -                              |
-| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                   | Belum Dimulai | -                              |
-| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan             | Belum Dimulai | -                              |
-| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                   | Belum Dimulai | -                              |
-| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor               | Belum Dimulai | -                              |
-| **Fase 8**   | CMS Admin & Backup/Restore Sistem                   | Belum Dimulai | -                              |
-| **Fase 9**   | Website Publik, Transparansi & SEO                  | Belum Dimulai | -                              |
-| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi           | Belum Dimulai | -                              |
+| Fase         | Nama Fase & Ruang Lingkup                                | Status                     | Rincian Dokumen                                                     | ID Changelog Terkait           |
+| :----------- | :------------------------------------------------------- | :------------------------- | :------------------------------------------------------------------ | :----------------------------- |
+| **Fase 0**   | Setup Fondasi Proyek, Tooling & Design Tokens            | **Selesai**                | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0001]`                   |
+| **Fase 0.5** | Memperketat Aturan, Standar Kode & Fondasi Keamanan      | **Selesai**                | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0002]` s.d. `[ID: 0006]` |
+| **Fase 0.6** | Desain Basis Data & Arsitektur Docker-First              | **Selesai dengan catatan** | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` s.d. `[ID: 0014]` |
+| **Fase 0.7** | Stack Docker Lengkap (Dev dan Prod)                      | **Berjalan**               | [`01-fondasi`](file:///docs/master-plan/01-fondasi-dan-setup.md)    | `[ID: 0007]` (Desain)          |
+| **Fase 1**   | Fondasi Admin: Auth, 2FA, RBAC, Layout Admin & Audit Log | Belum Dimulai              | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
+| **Fase 2**   | Pengaturan Sistem, Profil Admin & Manajemen User         | Belum Dimulai              | [`02-admin`](file:///docs/master-plan/02-admin-dan-kelembagaan.md)  | -                              |
+| **Fase 3**   | Manajemen Anggota & Data Masking                         | Belum Dimulai              | [`03-anggota`](file:///docs/master-plan/03-anggota-dan-keuangan.md) | -                              |
+| **Fase 4**   | Keuangan Inti & Akuntansi ISAK 35                        | Belum Dimulai              | [`03-anggota`](file:///docs/master-plan/03-anggota-dan-keuangan.md) | -                              |
+| **Fase 5**   | Proyek, Anggaran & Keterkaitan Keuangan                  | Belum Dimulai              | [`04-proyek`](file:///docs/master-plan/04-proyek-dan-pajak.md)      | -                              |
+| **Fase 6**   | Perpajakan Berkonfigurasi Dinamis                        | Belum Dimulai              | [`04-proyek`](file:///docs/master-plan/04-proyek-dan-pajak.md)      | -                              |
+| **Fase 7**   | Pelaporan ISAK 35, Dashboard & Ekspor                    | Belum Dimulai              | [`05-laporan`](file:///docs/master-plan/05-pelaporan-dan-cms.md)    | -                              |
+| **Fase 8**   | CMS Admin & Backup/Restore Sistem                        | Belum Dimulai              | [`05-laporan`](file:///docs/master-plan/05-pelaporan-dan-cms.md)    | -                              |
+| **Fase 9**   | Website Publik, Transparansi & SEO                       | Belum Dimulai              | [`06-publik`](file:///docs/master-plan/06-publik-dan-rilis.md)      | -                              |
+| **Fase 10**  | Hardening Akhir, Pentest & Rilis Produksi                | Belum Dimulai              | [`06-publik`](file:///docs/master-plan/06-publik-dan-rilis.md)      | -                              |
 
 ---
 
