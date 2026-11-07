@@ -22,7 +22,7 @@ services:
       - NEXT_PUBLIC_APP_URL=http://localhost:3000
       - AUTH_SECRET=${AUTH_SECRET:-super-secret-auth-key-min-32-chars-long!}
       - ENCRYPTION_KEY_ACTIVE_ID=${ENCRYPTION_KEY_ACTIVE_ID:-k1}
-      - ENCRYPTION_KEYS=${ENCRYPTION_KEYS:-{"k1":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}}
+      - ENCRYPTION_KEYS=${ENCRYPTION_KEYS:-k1:XSH9aj9tlmpITmISXrRFOd1yQB3H+DjEr/ZIFO9m3uc=}
       - BLIND_INDEX_SECRET=${BLIND_INDEX_SECRET:-blind-index-secret-key-min-32-chars!}
     volumes:
       - ./src:/app/src

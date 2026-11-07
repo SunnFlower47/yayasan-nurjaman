@@ -36,7 +36,7 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 | **A04: Insecure Design**           | Pengurus memanipulasi kas tanpa persetujuan pihak kedua         | Pemisahan tugas (_Maker-Checker_), integritas jurnal seimbang debit=kredit                             |
 | **A05: Security Misconfiguration** | Port DB terbuka publik, CORS permisif, header keamanan nihil    | Binding DB ke 127.0.0.1, Docker non-root, CSP ketat, HSTS, X-Frame-Options: DENY                       |
 | **A06: Outdated Components**       | CVE pada framework atau dependensi npm                          | Audit `pnpm audit`, Dependabot berpendingin 14 hari, pembaruan versi pinned berkala                    |
-| **A07: Identification Failures**   | Serangan brute force pada login admin                           | Rate limiting ketat, progressive lockout, 2FA TOTP wajib untuk pejabat kunci                           |
+| **A07: Identification Failures**   | Serangan brute force pada login admin                           | Rate limiting ketat, progressive lockout, 2FA TOTP wajib untuk semua akun                              |
 | **A08: Integrity Failures**        | Perubahan diam-diam pada riwayat transaksi posted               | Immutabilitas transaksi `posted` (hanya boleh void), jejak audit append-only                           |
 | **A09: Logging Failures**          | Aksi berbahaya tidak terdeteksi                                 | Logging terstruktur dengan requestId, IP address, rekaman sebelum dan sesudah perubahan                |
 | **A10: SSRF**                      | Eksploitasi webhook atau parser URL untuk memindai server lokal | Whitelist domain webhook eksternal, blokir seluruh rentang IP privat (RFC 1918) & metadata             |
@@ -79,9 +79,9 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 
 ### 2.4 Otentikasi Dua Faktor (2FA - TOTP)
 
-- **Kewajiban Peran**: Wajib aktif untuk peran **Super Admin**, **Ketua Yayasan**, dan **Bendahara**.
-- **Standar**: Berbasis waktu RFC 6238 (Google Authenticator, Microsoft Authenticator) dengan kunci rahasia minimal 160-bit.
-- **Kode Cadangan (_Recovery Codes_)**: 8 kode cadangan sekali pakai yang di-hash di database dan hanya ditampilkan sekali saat pendaftaran 2FA.
+- **Kewajiban Peran**: Wajib aktif untuk **SEMUA akun pengguna tanpa terkecuali** (Keputusan Pemilik).
+- **Standar**: Berbasis waktu RFC 6238 (Google Authenticator, Microsoft Authenticator) dengan kunci rahasia minimal 160-bit tersimpan terenkripsi AES-256-GCM.
+- **Kode Cadangan (_Recovery Codes_)**: 10 kode cadangan sekali pakai format `XXXX-XXXX-XXXX` yang di-hash SHA-256 di database dan hanya ditampilkan sekali saat pendaftaran atau pembuatan ulang 2FA.
 
 ### 2.5 Otentikasi Ulang (_Step-Up Re-Authentication_)
 
