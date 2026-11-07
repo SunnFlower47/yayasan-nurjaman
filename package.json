@@ -20,12 +20,14 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm format:check && node scripts/check-layers.mjs",
     "security:audit": "pnpm audit",
     "secrets:scan": "node scripts/scan-secrets.mjs",
-    "db:migrate": "prisma migrate dev",
+    "db:migrate": "docker compose run --rm migrate",
+    "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "changelog:new": "node scripts/new-changelog.mjs",
     "prepare": "husky"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
     "@prisma/client": "6.4.1",
     "clsx": "2.1.1",
     "lucide-react": "0.475.0",
@@ -51,6 +53,7 @@
     "prettier-plugin-tailwindcss": "0.6.11",
     "prisma": "6.4.1",
     "tailwindcss": "3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "5.7.3",
     "vitest": "3.0.7"
   },

@@ -4,14 +4,15 @@ Sistem web resmi dan panel manajemen internal untuk Yayasan Nurjaman Bongas Purw
 
 ## Urutan Wajib Baca Dokumen (Harus Dibaca Sebelum Bertindak)
 
-1. [`docs/MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) — Rencana induk, status fase aktif, lingkup, dan daftar tugas terperinci.
+1. [`docs/MASTER-PLAN.md`](file:///docs/MASTER-PLAN.md) — Rencana induk, status fase aktif, lingkup, dan daftar tugas terperinci (rincian modular di `docs/master-plan/`).
 2. [`docs/WORKING-RULES.md`](file:///docs/WORKING-RULES.md) — Aturan kerja, alur pengerjaan, standar kode, dan invarian akuntansi.
 3. [`docs/CODE-STANDARDS.md`](file:///docs/CODE-STANDARDS.md) — Standar clean code, batas ukuran berkas/fungsi, arsitektur berlapis, dan konvensi modular.
 4. [`docs/SECURITY.md`](file:///docs/SECURITY.md) — Kebijakan keamanan siber, model ancaman OWASP ASVS L2, otorisasi server, proteksi sesi, dan penanganan data sensitif.
 5. [`docs/UI-UX-RULES.md`](file:///docs/UI-UX-RULES.md) — Desain kelembagaan bersih, palet logo resmi, tipografi, komponen bersama, dan larangan AI-slop.
-6. [`docs/ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md) — Struktur sistem terdistribusi, skema konseptual, RBAC, dan audit trail.
-7. [`docs/DATABASE-SCHEMA.md`](file:///docs/DATABASE-SCHEMA.md) — Spesifikasi teknis struktur basis data (70 tabel dalam 8 modul domain).
-8. [`docs/11-migration-plan.md`](file:///docs/11-migration-plan.md) — Panduan migrasi database sekali jalan dan portabilitas mesin Docker.
+6. [`docs/ARCHITECTURE.md`](file:///docs/ARCHITECTURE.md) — Struktur sistem terdistribusi, skema konseptual, RBAC, dan audit trail (rincian modular di `docs/architecture/`).
+7. [`docs/database/00-README.md`](file:///docs/database/00-README.md) — Spesifikasi teknis struktur basis data (70 tabel modular dalam 8 berkas domain).
+8. [`docs/database/11-migration-plan.md`](file:///docs/database/11-migration-plan.md) — Panduan migrasi database sekali jalan dan portabilitas mesin Docker.
+9. [`docs/database/14-traceability.md`](file:///docs/database/14-traceability.md) — Matriks keterlacakan regulasi, evolusi skema expand-contract, dan validasi restore.
 
 ## 10 Aturan Inti yang Dilarang Keras Dilanggar
 
