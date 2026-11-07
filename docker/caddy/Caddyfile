@@ -14,6 +14,11 @@
 	# Global: sembunyikan identitas server Caddy
 	header -Server
 
+	# Batasi ukuran request body (mencegah DoS)
+	request_body {
+		max_size 5MB
+	}
+
 	# 1. Jalur statis publik /uploads/* (Pemilik header: Caddy)
 	handle_path /uploads/* {
 		header {

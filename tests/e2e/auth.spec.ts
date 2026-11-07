@@ -35,12 +35,13 @@ async function resetAdminUser() {
     }
   } catch {
     const sql = `UPDATE users SET password_hash = '${passwordHash}', must_change_password = true, status = 'ACTIVE', deleted_at = NULL WHERE username = 'admin';`;
-    execSync(
-      `docker exec yayasan_postgres_prod psql -U postgres -d yayasan_db -c "${sql}"`,
-      {
-        stdio: "pipe",
-      }
-    );
+    const container =
+      process.env.NODE_ENV === "production"
+        ? "yayasan_postgres_prod"
+        : "yayasan_postgres_dev";
+    execSync(`docker exec ${container} psql -U postgres -d yayasan_db -c "${sql}"`, {
+      stdio: "pipe",
+    });
   }
 }
 
