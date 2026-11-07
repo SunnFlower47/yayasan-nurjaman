@@ -5,6 +5,7 @@ import {
   sessionService,
   passwordService,
   sanitizeRedirectPath,
+  PASSWORD_MIN_LENGTH,
   AUTH_INVALID_CREDENTIALS_MSG,
   AUTH_ACCOUNT_LOCKED_MSG,
 } from "@/modules/auth";
@@ -39,44 +40,34 @@ describe("Integrasi Alur Autentikasi dan Manajemen Sesi (PostgreSQL Asli)", () =
         return existing.id;
       }
       const created = await prisma.user.create({
-        data: {
-          username,
-          email,
-          name,
-          passwordHash: hash,
-          status,
-          mustChangePassword,
-        },
+        data: { username, email, name, passwordHash: hash, status, mustChangePassword },
       });
       return created.id;
     }
 
     testUserId = await ensureUser(
       "auth_test_user",
-      "auth_test@yayasan-nurjaman.org",
-      "Pengguna Uji Autentikasi",
+      "auth_test@yayasan.org",
+      "Uji Auth",
       "ACTIVE",
       true
     );
-
     disabledUserId = await ensureUser(
       "auth_disabled_user",
-      "auth_disabled@yayasan-nurjaman.org",
-      "Pengguna Nonaktif Uji",
+      "auth_dis@yayasan.org",
+      "Uji Nonaktif",
       "DISABLED"
     );
-
     lockoutUserId = await ensureUser(
       "auth_lockout_user",
-      "auth_lockout@yayasan-nurjaman.org",
-      "Pengguna Uji Lockout",
+      "auth_lock@yayasan.org",
+      "Uji Lockout",
       "ACTIVE"
     );
-
     pwdChangeUserId = await ensureUser(
-      "auth_pwd_change_user",
-      "auth_pwd_change@yayasan-nurjaman.org",
-      "Pengguna Uji Ganti Sandi",
+      "auth_pwd_user",
+      "auth_pwd@yayasan.org",
+      "Uji Ganti Sandi",
       "ACTIVE",
       true
     );
@@ -87,26 +78,13 @@ describe("Integrasi Alur Autentikasi dan Manajemen Sesi (PostgreSQL Asli)", () =
   });
 
   afterAll(async () => {
-    // Bersihkan sesi dan pengguna uji
     const userIds = [testUserId, disabledUserId, lockoutUserId, pwdChangeUserId].filter(
       Boolean
     );
     if (userIds.length > 0) {
-      await prisma.securityEvent.deleteMany({
-        where: {
-          userId: { in: userIds },
-        },
-      });
-      await prisma.session.deleteMany({
-        where: {
-          userId: { in: userIds },
-        },
-      });
-      await prisma.user.deleteMany({
-        where: {
-          id: { in: userIds },
-        },
-      });
+      await prisma.securityEvent.deleteMany({ where: { userId: { in: userIds } } });
+      await prisma.session.deleteMany({ where: { userId: { in: userIds } } });
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
     }
     await prisma.$disconnect();
   });
@@ -245,7 +223,19 @@ describe("Integrasi Alur Autentikasi dan Manajemen Sesi (PostgreSQL Asli)", () =
       "127.0.0.1"
     );
 
-    // Eksekusi ganti kata sandi menggunakan sesi 1
+    // 6a. Password baru kurang dari PASSWORD_MIN_LENGTH ditolak
+    const shortResult = await authService.changePassword({
+      userId: pwdChangeUserId,
+      currentSessionId: s1.id,
+      currentPassword: validPassword,
+      newPassword: "x".repeat(PASSWORD_MIN_LENGTH - 1),
+      confirmPassword: "x".repeat(PASSWORD_MIN_LENGTH - 1),
+      userIp: "127.0.0.1",
+    });
+    expect(shortResult.success).toBe(false);
+    expect(shortResult.error).toContain(String(PASSWORD_MIN_LENGTH));
+
+    // Eksekusi ganti kata sandi valid menggunakan sesi 1
     const changeResult = await authService.changePassword({
       userId: pwdChangeUserId,
       currentSessionId: s1.id,

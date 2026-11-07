@@ -21,8 +21,9 @@ export const RATE_LIMIT_MAX_ATTEMPTS = 5; // Maks 5 kegagalan
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // Jendela waktu 15 menit
 export const RATE_LIMIT_LOCKOUT_MS = 15 * 60 * 1000; // Terkunci selama 15 menit
 
-// Kebijakan Keamanan Kata Sandi
+// Kebijakan Keamanan Kata Sandi (Keputusan Pemilik)
 export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_LENGTH = 128;
 
 // Pesan Kesalahan Seragam (Pencegahan Enumerasi Pengguna)
 export const AUTH_INVALID_CREDENTIALS_MSG = "Username atau password salah";

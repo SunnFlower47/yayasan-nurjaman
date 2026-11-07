@@ -6,6 +6,7 @@ import {
   changePasswordAction,
   type ChangePasswordActionResult,
 } from "../actions/change-password.action";
+import { PASSWORD_MIN_LENGTH } from "../constants";
 import { Input } from "@/components/shared/Input";
 import { Button } from "@/components/shared/Button";
 import { Alert } from "@/components/shared/Alert";
@@ -62,8 +63,8 @@ export function ChangePasswordForm() {
           type="password"
           autoComplete="new-password"
           required
-          placeholder="Minimal 8 karakter aman"
-          helperText="Minimal 8 karakter, bukan data pribadi atau kata sandi umum."
+          placeholder={`Minimal ${PASSWORD_MIN_LENGTH} karakter aman`}
+          helperText={`Minimal ${PASSWORD_MIN_LENGTH} karakter, bukan data pribadi atau kata sandi umum.`}
           disabled={isFormDisabled}
         />
 

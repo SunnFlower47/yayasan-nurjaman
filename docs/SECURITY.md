@@ -48,10 +48,14 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 ### 2.1 Hashing & Kebijakan Kata Sandi
 
 - **Algoritma**: Wajib menggunakan **Argon2id** (memory: 64MB / 65536 KB, iterations: 3, parallelism: 4) atau **bcrypt** dengan cost factor minimal 12.
-- **Kekuatan Sandi**:
-  - Panjang minimal: **8 karakter**.
-  - Wajib kombinasi huruf besar, huruf kecil, angka, dan simbol khusus.
-  - Pengecekan daftar hitam kata sandi umum (_common passwords blocklist_).
+- **Kekuatan Sandi (Keputusan Pemilik)**:
+  - Panjang minimal: **8 karakter** (`PASSWORD_MIN_LENGTH = 8`), didefinisikan terpusat sebagai konstanta tunggal di `src/modules/auth/constants.ts` dan digunakan seragam di form ganti password, seed admin, dan seluruh rangkaian pengujian.
+  - Batas maksimum: minimal **128 karakter** (`PASSWORD_MAX_LENGTH = 128`), guna mengizinkan penggunaan _passphrase_ panjang tanpa pembatasan yang menghambat pengguna.
+  - **Syarat Keamanan Pengimbang yang Wajib Dipertahankan**:
+    1. _Common Passwords Blocklist_: Penolakan mutlak terhadap daftar ~10.000 kata sandi pasaran lokal (`common-passwords.txt`).
+    2. _Anti-Identity Collision_: Kata sandi dilarang sama atau memuat username akun.
+    3. _Anti-Email Collision_: Kata sandi dilarang sama atau memuat alamat email atau prefix email akun (min. 3 karakter).
+    4. _Brute Force Defense_: Rate limiting 5 kali kegagalan per 15 menit dengan _lockout_ progresif dan timing attack defense (dummy hash).
 
 ### 2.2 Perlindungan Terhadap Serangan _Brute Force_ & Rate Limiting
 
