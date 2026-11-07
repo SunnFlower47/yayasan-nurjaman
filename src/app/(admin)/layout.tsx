@@ -4,11 +4,19 @@ import { AdminSidebar } from "@/components/layout/AdminSidebar";
 import { AdminHeader } from "@/components/layout/AdminHeader";
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const sessionWithUser = await requireUser({ allowMustChangePassword: true });
+  const sessionWithUser = await requireUser({
+    allowMustChangePassword: true,
+    allowUnverifiedMfa: true,
+  });
 
   // Jika akun diwajibkan ganti kata sandi, tampilkan fokus halaman tanpa navigasi luar
   if (sessionWithUser.user.mustChangePassword) {
     return <div className="min-h-screen bg-stone-50">{children}</div>;
+  }
+
+  // Jika akun belum menyelesaikan verifikasi 2FA, wajibkan verifikasi 2FA terlebih dahulu
+  if (!sessionWithUser.mfaVerifiedAt) {
+    await requireUser();
   }
 
   const roles = await getUserRoles(sessionWithUser.user.id);

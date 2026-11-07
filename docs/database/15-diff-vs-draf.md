@@ -57,15 +57,17 @@ Perbandingan dilakukan tabel demi tabel, kolom demi kolom, dengan membaca kedua 
 
 Pemilik proyek telah memutuskan **Jalan 2: Auth Tipis Buatan Sendiri (Lightweight In-House Auth)** pada ADR-011. Seluruh rencana perubahan tabel Better Auth dibatalkan, dan struktur 12 tabel Modul 1 tetap 100% patuh pada draf pemilik:
 
-| Item Usulan Perubahan                         | Di Draf Pemilik                     | Keputusan Final (ADR-011 DIPUTUSKAN) | Status                         | Keterangan                                                      |
-| :-------------------------------------------- | :---------------------------------- | :----------------------------------- | :----------------------------- | :-------------------------------------------------------------- |
-| Tabel `auth_accounts`                         | Tidak ada                           | Ditiadakan                           | dibatalkan, draf dipertahankan | Password hash tetap disimpan langsung di `users.password_hash`. |
-| Kolom `password_hash` di `users`              | Ada di `users`                      | Tetap di `users`                     | dibatalkan, draf dipertahankan | Tidak dipindahkan ke tabel eksternal.                           |
-| Tabel `verification_tokens`                   | Menggunakan `password_reset_tokens` | Tetap `password_reset_tokens`        | dibatalkan, draf dipertahankan | Sesuai draf pemilik untuk reset sandi.                          |
-| Tabel `two_factor_secrets` & `recovery_codes` | 2 tabel terpisah                    | Tetap 2 tabel terpisah               | dibatalkan, draf dipertahankan | Sesuai draf pemilik untuk TOTP dan kode darurat.                |
-| Kolom `email_verified` di `users`             | Tidak ada                           | Tidak ditambahkan                    | dibatalkan, draf dipertahankan | Sesuai draf pemilik (email hanya untuk reset/notifikasi).       |
+| Item Usulan Perubahan                         | Di Draf Pemilik                     | Keputusan Final (ADR-011 DIPUTUSKAN) | Status                                     | Keterangan                                                                          |
+| :-------------------------------------------- | :---------------------------------- | :----------------------------------- | :----------------------------------------- | :---------------------------------------------------------------------------------- |
+| Tabel `auth_accounts`                         | Tidak ada                           | Ditiadakan                           | dibatalkan, draf dipertahankan             | Password hash tetap disimpan langsung di `users.password_hash`.                     |
+| Kolom `password_hash` di `users`              | Ada di `users`                      | Tetap di `users`                     | dibatalkan, draf dipertahankan             | Tidak dipindahkan ke tabel eksternal.                                               |
+| Tabel `verification_tokens`                   | Menggunakan `password_reset_tokens` | Tetap `password_reset_tokens`        | dibatalkan, draf dipertahankan             | Sesuai draf pemilik untuk reset sandi.                                              |
+| Tabel `two_factor_secrets` & `recovery_codes` | 2 tabel terpisah                    | Tetap 2 tabel terpisah               | dibatalkan, draf dipertahankan             | Sesuai draf pemilik untuk TOTP dan kode darurat.                                    |
+| Kolom `email_verified` di `users`             | Tidak ada                           | Tidak ditambahkan                    | dibatalkan, draf dipertahankan             | Sesuai draf pemilik (email hanya untuk reset/notifikasi).                           |
+| Kolom `sessions.mfa_verified_at`              | Tidak ada                           | Ditambahkan                          | ditambah, kebutuhan 2FA, disetujui pemilik | Menandai sesi penuh vs parsial saat alur login 2FA wajib.                           |
+| Tipe `security_events` (MFA\_\*)              | Parsial                             | Ditambahkan (expand)                 | ditambah, kebutuhan 2FA, disetujui pemilik | Audit event: MFA_CHALLENGE, MFA_VERIFIED, MFA_FAILED, MFA_RECOVERY_USED, MFA_RESET. |
 
-_(Hasil: 12 tabel Modul 1 identitas dan akses 100% SAMA persis dengan draf resmi pemilik)._
+_(Hasil: 12 tabel Modul 1 identitas dan akses 100% SAMA persis dengan draf resmi pemilik, dengan perluasan terotorisasi kolom `sessions.mfa_verified_at` dan event MFA)._
 
 ---
 
