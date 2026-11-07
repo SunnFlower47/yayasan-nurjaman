@@ -44,18 +44,19 @@ _Catatan: SD, v. UQ username dan UQ email (parsial untuk yang belum dihapus). Lo
 
 ### sessions
 
-| Kolom                 | Tipe        | Null  | Keterangan                                               |
-| :-------------------- | :---------- | :---- | :------------------------------------------------------- |
-| `user_id`             | uuid        | Tidak | FK → users, ON DELETE CASCADE                            |
-| `token_hash`          | text        | Tidak | [hash], unik                                             |
-| `ip`                  | inet        | Ya    | Alamat IP klien                                          |
-| `user_agent`          | text        | Ya    | Peramban klien                                           |
-| `last_seen_at`        | timestamptz | Tidak | Aktivitas terakhir                                       |
-| `idle_expires_at`     | timestamptz | Tidak | Batas waktu tidak aktif (30 menit)                       |
-| `absolute_expires_at` | timestamptz | Tidak | Batas mutlak sesi (8 jam), diindeks untuk pembersihan    |
-| `reauth_at`           | timestamptz | Ya    | Waktu re-autentikasi terakhir untuk aksi berisiko tinggi |
-| `revoked_at`          | timestamptz | Ya    | Waktu pencabutan sesi                                    |
-| `revoked_reason`      | text        | Ya    | Alasan pencabutan (logout, ganti password, role revoked) |
+| Kolom                 | Tipe        | Null  | Keterangan                                                                                                    |
+| :-------------------- | :---------- | :---- | :------------------------------------------------------------------------------------------------------------ |
+| `user_id`             | uuid        | Tidak | FK → users, ON DELETE CASCADE                                                                                 |
+| `token_hash`          | text        | Tidak | [hash], unik                                                                                                  |
+| `ip`                  | inet        | Ya    | Alamat IP klien                                                                                               |
+| `user_agent`          | text        | Ya    | Peramban klien                                                                                                |
+| `last_seen_at`        | timestamptz | Tidak | Aktivitas terakhir                                                                                            |
+| `idle_expires_at`     | timestamptz | Tidak | Batas waktu tidak aktif (30 menit)                                                                            |
+| `absolute_expires_at` | timestamptz | Tidak | Batas mutlak sesi (8 jam), diindeks untuk pembersihan                                                         |
+| `mfa_verified_at`     | timestamptz | Ya    | Terisi setelah verifikasi 2FA (sesi penuh). Null = sesi parsial. (ditambah, kebutuhan 2FA, disetujui pemilik) |
+| `reauth_at`           | timestamptz | Ya    | Waktu re-autentikasi terakhir untuk aksi berisiko tinggi                                                      |
+| `revoked_at`          | timestamptz | Ya    | Waktu pencabutan sesi                                                                                         |
+| `revoked_reason`      | text        | Ya    | Alasan pencabutan (logout, ganti password, role revoked)                                                      |
 
 ---
 
@@ -175,14 +176,14 @@ _Catatan: Append-only murni, tanpa updated_at. Pengguna aplikasi tidak memiliki 
 
 ### security_events
 
-| Kolom         | Tipe        | Null  | Keterangan                                                                                                                                           |
-| :------------ | :---------- | :---- | :--------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `occurred_at` | timestamptz | Tidak | Waktu kejadian                                                                                                                                       |
-| `type`        | enum        | Tidak | LOGIN_SUCCESS, LOGIN_FAILED, LOCKOUT, PERMISSION_DENIED, ROLE_CHANGED, SESSION_REVOKED, TWO_FACTOR_CHANGED, BACKUP_DOWNLOADED, RESTORE_STARTED, dst. |
-| `user_id`     | uuid        | Ya    | FK → users                                                                                                                                           |
-| `ip`          | inet        | Ya    | Alamat IP                                                                                                                                            |
-| `user_agent`  | text        | Ya    | Peramban                                                                                                                                             |
-| `details`     | jsonb       | Ya    | Detail konteks (tanpa data pribadi/token)                                                                                                            |
+| Kolom         | Tipe        | Null  | Keterangan                                                                                                                                                                                                                                                                         |
+| :------------ | :---------- | :---- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `occurred_at` | timestamptz | Tidak | Waktu kejadian                                                                                                                                                                                                                                                                     |
+| `type`        | enum        | Tidak | LOGIN_SUCCESS, LOGIN_FAILED, LOCKOUT, PERMISSION_DENIED, ROLE_CHANGED, SESSION_REVOKED, TWO_FACTOR_CHANGED, MFA_CHALLENGE, MFA_VERIFIED, MFA_FAILED, MFA_RECOVERY_USED, MFA_RESET, BACKUP_DOWNLOADED, RESTORE_STARTED, dst. (Tipe MFA: ditambah, kebutuhan 2FA, disetujui pemilik) |
+| `user_id`     | uuid        | Ya    | FK → users                                                                                                                                                                                                                                                                         |
+| `ip`          | inet        | Ya    | Alamat IP                                                                                                                                                                                                                                                                          |
+| `user_agent`  | text        | Ya    | Peramban                                                                                                                                                                                                                                                                           |
+| `details`     | jsonb       | Ya    | Detail konteks (tanpa data pribadi/token)                                                                                                                                                                                                                                          |
 
 _Catatan: Append-only._
 

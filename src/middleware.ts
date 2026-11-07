@@ -88,13 +88,6 @@ export function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  if (hasSessionCookie && pathname === "/masuk") {
-    const adminUrl = new URL("/admin", request.url);
-    const redirectResponse = NextResponse.redirect(adminUrl);
-    applySecurityHeaders(redirectResponse, request, nonce);
-    return redirectResponse;
-  }
-
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
 

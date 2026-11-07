@@ -23,12 +23,12 @@ export function ChangePasswordForm() {
 
   useEffect(() => {
     if (!isSuccess) return;
+    const dest = state?.redirectTo || "/admin";
     const timer = setTimeout(() => {
-      router.push("/admin");
-      router.refresh();
+      router.push(dest);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [isSuccess, router]);
+  }, [isSuccess, router, state?.redirectTo]);
 
   return (
     <form action={formAction} className="space-y-5">

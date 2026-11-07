@@ -1,6 +1,6 @@
 /**
  * src/modules/auth/services/session.service.ts
- * Layanan validasi, perpanjangan idle, batas absolut, dan pencabutan sesi.
+ * Layanan validasi, perpanjangan idle, batas absolut, rotasi, dan pencabutan sesi.
  */
 
 import {
@@ -16,9 +16,6 @@ import {
 import type { Session } from "@prisma/client";
 
 export class SessionService {
-  /**
-   * Membuat sesi baru dengan token kriptografis berentropi 256-bit.
-   */
   async createSession(
     userId: string,
     ip?: string,
@@ -43,10 +40,6 @@ export class SessionService {
     return { rawToken, session };
   }
 
-  /**
-   * Memvalidasi keabsahan token sesi, memeriksa kedaluwarsa idle & absolut,
-   * serta memperpanjang idle timeout maksimal 1x per menit.
-   */
   async validateSession(rawToken: string): Promise<SessionWithUser | null> {
     const tokenHash = hashSessionToken(rawToken);
     const session = await sessionRepository.findActiveByTokenHash(tokenHash);
@@ -55,7 +48,6 @@ export class SessionService {
       return null;
     }
 
-    // Pastikan akun aktif dan tidak di-soft-delete
     if (session.user.status !== "ACTIVE" || session.user.deletedAt !== null) {
       await sessionRepository.revoke(session.id, "USER_INACTIVE");
       return null;
@@ -63,19 +55,16 @@ export class SessionService {
 
     const now = Date.now();
 
-    // 1. Periksa batas absolut 8 jam (tidak dapat diperpanjang)
     if (now > session.absoluteExpiresAt.getTime()) {
       await sessionRepository.revoke(session.id, "ABSOLUTE_TIMEOUT");
       return null;
     }
 
-    // 2. Periksa batas diam (idle) 30 menit
     if (now > session.idleExpiresAt.getTime()) {
       await sessionRepository.revoke(session.id, "IDLE_TIMEOUT");
       return null;
     }
 
-    // 3. Perpanjang idle timeout jika aktivitas terakhir melebihi throttle interval (1 menit)
     if (now - session.lastSeenAt.getTime() >= SESSION_ACTIVITY_THROTTLE_MS) {
       const newIdleExpiresAt = new Date(now + SESSION_IDLE_TIMEOUT_MS);
       await sessionRepository.updateActivity(session.id, newIdleExpiresAt);
@@ -84,6 +73,16 @@ export class SessionService {
     }
 
     return session;
+  }
+
+  async rotateSession(
+    sessionId: string,
+    mfaVerified = true
+  ): Promise<{ rawToken: string }> {
+    const rawToken = generateSessionToken();
+    const tokenHash = hashSessionToken(rawToken);
+    await sessionRepository.rotateToken(sessionId, tokenHash, mfaVerified);
+    return { rawToken };
   }
 
   async revokeSession(sessionId: string, reason = "LOGOUT"): Promise<void> {
@@ -96,6 +95,10 @@ export class SessionService {
     reason = "PASSWORD_CHANGED"
   ): Promise<number> {
     return sessionRepository.revokeOtherSessions(userId, currentSessionId, reason);
+  }
+
+  async revokeAllUserSessions(userId: string, reason = "RESET_2FA"): Promise<number> {
+    return sessionRepository.revokeAllSessions(userId, reason);
   }
 }
 

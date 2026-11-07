@@ -10,7 +10,10 @@ export const metadata: Metadata = {
 };
 
 export default async function GantiPasswordPage() {
-  const sessionWithUser = await requireUser({ allowMustChangePassword: true });
+  const sessionWithUser = await requireUser({
+    allowMustChangePassword: true,
+    allowUnverifiedMfa: true,
+  });
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-stone-50 px-4 py-12 sm:px-6 lg:px-8">

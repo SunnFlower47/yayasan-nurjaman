@@ -180,3 +180,26 @@ docker buildx build \
 ```
 
 Semua base image resmi (`postgres:17.2-bookworm`, `node:22-alpine`, `caddy:2.9.1-alpine`) secara bawaan mendukung multi-arsitektur `amd64` dan `arm64`.
+
+---
+
+## 6. Prosedur Pemulihan Darurat 2FA (Break-Glass Operator)
+
+Bila pengurus atau Super Administrator kehilangan perangkat autentikator dan seluruh kode pemulihan:
+
+### 6.1 Eksekusi Skrip CLI Server (One-Off Service)
+
+Prosedur ini **HANYA** dapat dijalankan langsung oleh operator yang memiliki akses terminal SSH server VPS:
+
+```bash
+pnpm admin:reset-2fa -- --username <username_pengurus>
+```
+
+1. Operator akan diminta mengetik ulang username target sebagai konfirmasi sadar.
+2. Skrip menghapus secret TOTP dan seluruh recovery code akun target.
+3. Seluruh sesi aktif target langsung dicabut (`revoked_at = now()`).
+4. Aksi dicatat secara permanen pada `audit_logs` dan `security_events` dengan aktor `cli`.
+5. Pengurus dapat masuk kembali dan wajib melakukan setup ulang 2FA baru saat login.
+
+> [!IMPORTANT] **Penyimpanan Fisik Kode Pemulihan Super Admin**
+> 10 kode pemulihan darurat untuk akun Super Administrator **WAJIB dicetak secara fisik** dan disimpan di brankas dokumen resmi yayasan yang terkunci, terpisah dari perangkat komputer.

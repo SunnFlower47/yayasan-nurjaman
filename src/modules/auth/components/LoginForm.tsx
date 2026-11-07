@@ -20,7 +20,6 @@ export function LoginForm() {
   useEffect(() => {
     if (state?.success && state.redirectTo) {
       router.push(state.redirectTo);
-      router.refresh();
     }
   }, [state, router]);
 
