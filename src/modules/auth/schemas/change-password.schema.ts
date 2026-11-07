@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { PASSWORD_MIN_LENGTH } from "../constants";
+import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "../constants";
 
 export const changePasswordSchema = z
   .object({
@@ -14,6 +14,10 @@ export const changePasswordSchema = z
       .min(
         PASSWORD_MIN_LENGTH,
         `Kata sandi baru minimal harus ${PASSWORD_MIN_LENGTH} karakter`
+      )
+      .max(
+        PASSWORD_MAX_LENGTH,
+        `Kata sandi baru maksimal ${PASSWORD_MAX_LENGTH} karakter`
       ),
     confirmPassword: z.string().min(1, "Konfirmasi kata sandi wajib diisi"),
   })

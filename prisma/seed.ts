@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import * as argon2 from "@node-rs/argon2";
 import { SYSTEM_PERMISSIONS } from "../src/modules/auth/permissions";
-import { validatePasswordPolicy } from "../src/modules/auth";
+import { validatePasswordPolicy, PASSWORD_MIN_LENGTH } from "../src/modules/auth";
 
 function getMigratorDatabaseUrl(): string {
   const envUrl = process.env["DATABASE_URL"] || "";
@@ -147,7 +147,7 @@ function getValidatedAdminCredentials(): {
   const policy = validatePasswordPolicy(password, { username, email });
   if (!policy.valid) {
     console.error(
-      `❌ Inisialisasi admin gagal: Kata sandi INITIAL_ADMIN_PASSWORD tidak memenuhi kebijakan keamanan yayasan: ${policy.error}`
+      `❌ Inisialisasi admin gagal: Kata sandi INITIAL_ADMIN_PASSWORD tidak memenuhi kebijakan keamanan yayasan (min. ${PASSWORD_MIN_LENGTH} karakter): ${policy.error}`
     );
     process.exit(1);
   }

@@ -6,6 +6,7 @@ import {
   validatePasswordPolicy,
   sanitizeRedirectPath,
   PASSWORD_MIN_LENGTH,
+  PASSWORD_MAX_LENGTH,
 } from "@/modules/auth";
 
 describe("Unit Tests: Utilitas Modul Autentikasi dan Keamanan", () => {
@@ -59,10 +60,40 @@ describe("Unit Tests: Utilitas Modul Autentikasi dan Keamanan", () => {
   });
 
   describe("Validasi Kebijakan Kata Sandi", () => {
-    it("menolak kata sandi kurang dari batas minimum 8 karakter", () => {
-      const result = validatePasswordPolicy("Pndek1!");
+    it("menolak kata sandi kurang dari batas minimum PASSWORD_MIN_LENGTH karakter", () => {
+      const shortPass = "x".repeat(PASSWORD_MIN_LENGTH - 1);
+      const result = validatePasswordPolicy(shortPass);
       expect(result.valid).toBe(false);
       expect(result.error).toContain(String(PASSWORD_MIN_LENGTH));
+    });
+
+    it("menerima kata sandi dengan panjang tepat batas minimum PASSWORD_MIN_LENGTH karakter", () => {
+      const validMinPass = "K9#xL2$v";
+      const result = validatePasswordPolicy(validMinPass, {
+        username: "budi",
+        email: "budi@yayasan.org",
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it("menerima passphrase panjang hingga batas maksimum PASSWORD_MAX_LENGTH karakter", () => {
+      const longPassphrase = "KunciRahasia!2026@Purwakarta".padEnd(
+        PASSWORD_MAX_LENGTH,
+        "x"
+      );
+      expect(longPassphrase.length).toBe(PASSWORD_MAX_LENGTH);
+      const result = validatePasswordPolicy(longPassphrase, {
+        username: "budi",
+        email: "budi@yayasan.org",
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it("menolak kata sandi yang melebihi batas maksimum PASSWORD_MAX_LENGTH karakter", () => {
+      const tooLongPass = "a".repeat(PASSWORD_MAX_LENGTH + 1);
+      const result = validatePasswordPolicy(tooLongPass);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain(String(PASSWORD_MAX_LENGTH));
     });
 
     it("menolak kata sandi yang memuat username", () => {

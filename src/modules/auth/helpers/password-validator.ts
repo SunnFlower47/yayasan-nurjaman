@@ -5,7 +5,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import { PASSWORD_MIN_LENGTH } from "../constants";
+import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "../constants";
 
 let cachedCommonPasswords: Set<string> | null = null;
 
@@ -57,7 +57,7 @@ function hasEmailCollision(password: string, email?: string): boolean {
 
 /**
  * Memvalidasi apakah kata sandi baru memenuhi standar keamanan yayasan:
- * 1. Minimal 8 karakter.
+ * 1. Minimal 8 karakter, maksimal 128 karakter (passphrase panjang didukung).
  * 2. Tidak boleh sama atau memuat username.
  * 3. Tidak boleh sama atau memuat alamat email.
  * 4. Tidak boleh terdapat dalam daftar ~10.000 kata sandi pasaran lokal.
@@ -70,6 +70,13 @@ export function validatePasswordPolicy(
     return {
       valid: false,
       error: `Kata sandi harus terdiri dari minimal ${PASSWORD_MIN_LENGTH} karakter.`,
+    };
+  }
+
+  if (password.length > PASSWORD_MAX_LENGTH) {
+    return {
+      valid: false,
+      error: `Kata sandi tidak boleh melebihi ${PASSWORD_MAX_LENGTH} karakter.`,
     };
   }
 

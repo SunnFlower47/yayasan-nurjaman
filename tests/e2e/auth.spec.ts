@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
+import { PASSWORD_MIN_LENGTH } from "../../src/modules/auth/constants";
 
 const prisma = new PrismaClient();
 const initialAdminPassword = "KunciAman#2026@YayasanNurjamanPurwakarta";
@@ -106,6 +107,13 @@ test.describe("E2E Autentikasi Pengurus, Sesi & Ganti Sandi Wajib", () => {
     // 2. Wajib diarahkan ke halaman /ganti-password
     await expect(page).toHaveURL(/\/ganti-password/, { timeout: 10000 });
     await expect(page.locator("h1")).toContainText("Perbarui Kata Sandi");
+
+    // Verifikasi pesan antarmuka formulir konsisten dengan nilai PASSWORD_MIN_LENGTH
+    const newPwdInput = page.locator("input[name='newPassword']");
+    await expect(newPwdInput).toHaveAttribute(
+      "placeholder",
+      `Minimal ${PASSWORD_MIN_LENGTH} karakter aman`
+    );
 
     // 3. Verifikasi atribut keamanan cookie sesi
     const cookies = await page.context().cookies();
