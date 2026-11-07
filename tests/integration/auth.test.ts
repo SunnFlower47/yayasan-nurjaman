@@ -82,6 +82,7 @@ describe("Integrasi Alur Autentikasi dan Manajemen Sesi (PostgreSQL Asli)", () =
       Boolean
     );
     if (userIds.length > 0) {
+      await prisma.auditLog.deleteMany({ where: { actorUserId: { in: userIds } } });
       await prisma.securityEvent.deleteMany({ where: { userId: { in: userIds } } });
       await prisma.session.deleteMany({ where: { userId: { in: userIds } } });
       await prisma.user.deleteMany({ where: { id: { in: userIds } } });

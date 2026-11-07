@@ -47,6 +47,12 @@ export const SYSTEM_PERMISSIONS: readonly SystemPermissionDef[] = [
     action: "assign_role",
     description: "Menugaskan atau mencabut peran pada pengguna",
   },
+  {
+    code: "users.reset_2fa",
+    module: "users",
+    action: "reset_2fa",
+    description: "Mereset kredensial 2FA pengguna (hanya Super Admin)",
+  },
 
   // Modul Peran & Izin (Roles)
   {

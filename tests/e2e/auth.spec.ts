@@ -136,6 +136,12 @@ test.describe("E2E Autentikasi Pengurus, Sesi & Ganti Sandi Wajib", () => {
     await expect(page).toHaveURL(/\/admin/, { timeout: 10000 });
     await expect(page.locator("h1")).toContainText("Halo,");
 
+    // 5b. Navigasi melalui layout sidebar admin ke halaman Jejak Audit
+    await expect(page.locator("aside")).toBeVisible();
+    await page.click("a:has-text('Jejak Audit')");
+    await expect(page).toHaveURL(/\/admin\/audit/, { timeout: 10000 });
+    await expect(page.locator("h1")).toContainText("Jejak Audit Sistem");
+
     // 6. Tombol keluar mencabut sesi dan mengembalikan pengguna ke /masuk
     await page.click("button:has-text('Keluar')");
     await expect(page).toHaveURL(/\/masuk/);
