@@ -2,19 +2,21 @@
 
 /**
  * src/modules/auth/actions/change-password.action.ts
- * Server Action untuk pembaruan kata sandi wajib dan berkala.
+ * Server Action untuk alur penggantian kata sandi (wajib maupun berkala).
  */
 
 import { headers } from "next/headers";
 import { changePasswordSchema } from "../schemas/change-password.schema";
 import { authService } from "../services/auth.service";
+import { twoFactorService } from "../services/two-factor.service";
 import { verifyActionOrigin } from "../helpers/origin-checker";
-import { requireUser } from "../helpers/require-user";
 import { getClientIp } from "../helpers/ip";
+import { requireUser } from "../helpers/require-user";
 
 export interface ChangePasswordActionResult {
   success: boolean;
   error?: string | undefined;
+  redirectTo?: string | undefined;
 }
 
 export async function changePasswordAction(
@@ -23,13 +25,16 @@ export async function changePasswordAction(
 ): Promise<ChangePasswordActionResult> {
   const reqHeaders = await headers();
 
-  // 1. Verifikasi Origin
+  // 1. Verifikasi CSRF / Origin
   if (!verifyActionOrigin(reqHeaders)) {
     return { success: false, error: "Permintaan dari asal (origin) tidak sah." };
   }
 
-  // 2. Otorisasi Pengguna (diizinkan bila sedang berstatus mustChangePassword)
-  const sessionWithUser = await requireUser({ allowMustChangePassword: true });
+  // 2. Otorisasi Pengguna (diizinkan saat mustChangePassword atau sebelum 2FA selesai)
+  const sessionWithUser = await requireUser({
+    allowMustChangePassword: true,
+    allowUnverifiedMfa: true,
+  });
 
   // 3. Validasi skema input form
   const rawInput = {
@@ -59,5 +64,12 @@ export async function changePasswordAction(
     userAgent,
   });
 
-  return result;
+  if (!result.success) {
+    return { success: false, error: result.error || "Gagal mengubah kata sandi." };
+  }
+
+  const status = await twoFactorService.getStatus(sessionWithUser.userId);
+  const redirectTo = !status.enrolled ? "/2fa/setup" : "/admin";
+
+  return { success: true, redirectTo };
 }

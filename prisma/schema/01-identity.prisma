@@ -13,6 +13,11 @@ enum SecurityEventType {
   ROLE_CHANGED
   SESSION_REVOKED
   TWO_FACTOR_CHANGED
+  MFA_CHALLENGE
+  MFA_VERIFIED
+  MFA_FAILED
+  MFA_RECOVERY_USED
+  MFA_RESET
   BACKUP_DOWNLOADED
   RESTORE_STARTED
 
@@ -55,6 +60,7 @@ model Session {
   lastSeenAt        DateTime  @default(now()) @map("last_seen_at") @db.Timestamptz(6)
   idleExpiresAt     DateTime  @map("idle_expires_at") @db.Timestamptz(6)
   absoluteExpiresAt DateTime  @map("absolute_expires_at") @db.Timestamptz(6)
+  mfaVerifiedAt     DateTime? @map("mfa_verified_at") @db.Timestamptz(6)
   reauthAt          DateTime? @map("reauth_at") @db.Timestamptz(6)
   revokedAt         DateTime? @map("revoked_at") @db.Timestamptz(6)
   revokedReason     String?   @map("revoked_reason")

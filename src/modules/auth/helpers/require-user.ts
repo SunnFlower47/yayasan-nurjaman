@@ -1,13 +1,14 @@
 /**
  * src/modules/auth/helpers/require-user.ts
  * Helper autentikasi otoritatif sisi server untuk Server Component dan Server Actions.
- * Mengacu pada ADR-004 (otorisasi server, bukan murni middleware).
+ * Menegakkan 2FA TOTP wajib untuk seluruh akun (mfa_verified_at IS NOT NULL).
  */
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { AUTH_COOKIE_NAME_DEV, AUTH_COOKIE_NAME_PROD } from "../constants";
 import { sessionService } from "../services/session.service";
+import { twoFactorRepository } from "../repositories/two-factor.repository";
 import type { SessionWithUser } from "../repositories/session.repository";
 
 export function getSessionCookieName(): string {
@@ -16,10 +17,6 @@ export function getSessionCookieName(): string {
     : AUTH_COOKIE_NAME_DEV;
 }
 
-/**
- * Mengambil sesi dan pengguna saat ini dari cookie tanpa pengalihan otomatis.
- * Mengembalikan null jika pengguna belum terautentikasi atau sesi kedaluwarsa.
- */
 export async function getCurrentUser(): Promise<SessionWithUser | null> {
   const cookieStore = await cookies();
   const token = cookieStore.get(getSessionCookieName())?.value;
@@ -34,13 +31,9 @@ export async function getCurrentUser(): Promise<SessionWithUser | null> {
 export interface RequireUserOptions {
   allowMustChangePassword?: boolean;
   nextPath?: string;
+  allowUnverifiedMfa?: boolean;
 }
 
-/**
- * Memastikan permintaan memiliki sesi aktif yang sah.
- * Mengalihkan secara otomatis ke /masuk jika tidak sah,
- * atau ke /ganti-password jika must_change_password bernilai true.
- */
 export async function requireUser(
   options: RequireUserOptions = {}
 ): Promise<SessionWithUser> {
@@ -53,7 +46,19 @@ export async function requireUser(
     redirect(`/masuk${nextParam}`);
   }
 
-  // Jika diwajibkan ganti sandi dan halaman saat ini bukan /ganti-password
+  // 1. Verifikasi 2FA Wajib: sesi tanpa mfa_verified_at dianggap belum terautentikasi penuh
+  if (!sessionWithUser.mfaVerifiedAt && !options.allowUnverifiedMfa) {
+    const secretRow = await twoFactorRepository.findSecretByUserId(
+      sessionWithUser.user.id
+    );
+
+    if (!secretRow || !secretRow.confirmedAt) {
+      redirect("/2fa/setup");
+    }
+    redirect("/verifikasi-2fa");
+  }
+
+  // 2. Jika diwajibkan ganti sandi dan halaman saat ini bukan /ganti-password
   if (sessionWithUser.user.mustChangePassword && !options.allowMustChangePassword) {
     redirect("/ganti-password");
   }

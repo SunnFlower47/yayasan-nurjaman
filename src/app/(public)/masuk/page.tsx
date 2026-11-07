@@ -1,14 +1,26 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import type { Metadata } from "next";
-import { LoginForm } from "@/modules/auth";
+import { redirect } from "next/navigation";
+import { LoginForm, getCurrentUser, twoFactorService } from "@/modules/auth";
 
 export const metadata: Metadata = {
   title: "Masuk ke Panel Pengurus | Yayasan Nurjaman Bongas Purwakarta",
   description: "Portal masuk resmi untuk pengurus Yayasan Nurjaman Bongas Purwakarta.",
 };
 
-export default function MasukPage() {
+export default async function MasukPage() {
+  const sessionWithUser = await getCurrentUser();
+  if (sessionWithUser) {
+    if (sessionWithUser.user.mustChangePassword) {
+      redirect("/ganti-password");
+    }
+    if (!sessionWithUser.mfaVerifiedAt) {
+      const status = await twoFactorService.getStatus(sessionWithUser.userId);
+      redirect(status.enrolled ? "/verifikasi-2fa" : "/2fa/setup");
+    }
+    redirect("/admin");
+  }
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-stone-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">

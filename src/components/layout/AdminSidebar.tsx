@@ -14,6 +14,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { name: "Ringkasan", href: "/admin", icon: LayoutDashboard },
   { name: "Jejak Audit", href: "/admin/audit", icon: History },
+  { name: "Keamanan 2FA", href: "/admin/keamanan", icon: Shield },
   { name: "Ganti Sandi", href: "/ganti-password", icon: KeyRound },
 ];
 

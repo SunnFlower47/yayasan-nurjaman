@@ -81,6 +81,56 @@ export class SessionRepository {
     });
     return result.count;
   }
+
+  async revokeAllSessions(userId: string, reason: string): Promise<number> {
+    const result = await db.session.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+        revokedReason: reason,
+      },
+    });
+    return result.count;
+  }
+
+  async setMfaVerified(sessionId: string): Promise<void> {
+    await db.session.update({
+      where: { id: sessionId },
+      data: {
+        mfaVerifiedAt: new Date(),
+        reauthAt: new Date(),
+      },
+    });
+  }
+
+  async rotateToken(
+    sessionId: string,
+    newTokenHash: string,
+    mfaVerified = true
+  ): Promise<void> {
+    const now = new Date();
+    await db.session.update({
+      where: { id: sessionId },
+      data: {
+        tokenHash: newTokenHash,
+        lastSeenAt: now,
+        reauthAt: now,
+        ...(mfaVerified ? { mfaVerifiedAt: now } : {}),
+      },
+    });
+  }
+
+  async setReauthAt(sessionId: string): Promise<void> {
+    await db.session.update({
+      where: { id: sessionId },
+      data: {
+        reauthAt: new Date(),
+      },
+    });
+  }
 }
 
 export const sessionRepository = new SessionRepository();
