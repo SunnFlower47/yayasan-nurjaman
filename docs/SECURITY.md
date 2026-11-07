@@ -49,7 +49,7 @@ Sistem Yayasan Nurjaman mengelola aset publik dan catatan keuangan nirlaba yang 
 
 - **Algoritma**: Wajib menggunakan **Argon2id** (memory: 64MB / 65536 KB, iterations: 3, parallelism: 4) atau **bcrypt** dengan cost factor minimal 12.
 - **Kekuatan Sandi (Keputusan Pemilik)**:
-  - Panjang minimal: **8 karakter** (`PASSWORD_MIN_LENGTH = 8`), didefinisikan terpusat sebagai konstanta tunggal di `src/modules/auth/constants.ts` dan digunakan seragam di form ganti password, seed admin, dan seluruh rangkaian pengujian.
+  - Panjang minimal: **8 karakter** (`PASSWORD_MIN_LENGTH = 8`), didefinisikan terpusat sebagai konstanta tunggal di `src/modules/auth/constants.ts` dan digunakan seragam di form ganti password, seed admin, dan seluruh rangkaian pengujian. Minimal 8 karakter adalah keputusan pemilik dan hanya dapat dipertanggungjawabkan bila 2FA wajib untuk semua akun; sistem tidak boleh dipakai di produksi sebelum Fase 1d selesai.
   - Batas maksimum: minimal **128 karakter** (`PASSWORD_MAX_LENGTH = 128`), guna mengizinkan penggunaan _passphrase_ panjang tanpa pembatasan yang menghambat pengguna.
   - **Syarat Keamanan Pengimbang yang Wajib Dipertahankan**:
     1. _Common Passwords Blocklist_: Penolakan mutlak terhadap daftar ~10.000 kata sandi pasaran lokal (`common-passwords.txt`).
