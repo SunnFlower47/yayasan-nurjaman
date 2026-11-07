@@ -25,7 +25,8 @@ function buildWhereClause(options: AuditLogQueryOptions): Prisma.AuditLogWhereIn
 
 export class AuditLogRepository {
   async create(data: AuditLogInput) {
-    return db.auditLog.create({
+    const client = (data.dbClient as typeof db) ?? db;
+    return client.auditLog.create({
       data: {
         actorUserId: data.actorUserId ?? null,
         action: data.action,
@@ -33,6 +34,9 @@ export class AuditLogRepository {
         entityId: data.entityId ?? null,
         before: (data.before as Prisma.InputJsonValue) ?? undefined,
         after: (data.after as Prisma.InputJsonValue) ?? undefined,
+        ip: data.ip ?? null,
+        userAgent: data.userAgent ?? null,
+        requestId: data.requestId ?? null,
       },
       include: {
         actor: {

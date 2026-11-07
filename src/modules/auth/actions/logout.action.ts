@@ -29,6 +29,13 @@ export async function logoutAction(): Promise<void> {
     }
   }
 
-  cookieStore.delete(cookieName);
+  const isProd = process.env.NODE_ENV === "production";
+  cookieStore.set(cookieName, "", {
+    path: "/",
+    maxAge: 0,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: isProd,
+  });
   redirect("/masuk");
 }

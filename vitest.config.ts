@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: "node",
     globals: true,
+    fileParallelism: false,
     include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
     env: {
       NODE_ENV: "test",

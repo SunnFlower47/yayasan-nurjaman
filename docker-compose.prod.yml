@@ -52,6 +52,7 @@ services:
       - HOSTNAME=0.0.0.0
       - DATABASE_URL=postgresql://${DB_APP_USER:-db_app}:${DB_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-yayasan_db}?schema=public
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://localhost,http://localhost:3000}
       - AUTH_SECRET=${AUTH_SECRET}
       - ENCRYPTION_KEY_ACTIVE_ID=${ENCRYPTION_KEY_ACTIVE_ID}
       - ENCRYPTION_KEYS=${ENCRYPTION_KEYS}

@@ -13,16 +13,17 @@ export class TwoFactorRepository {
   }
 
   async upsertSecret(userId: string, encryptedSecret: Buffer) {
+    const secretBytes = new Uint8Array(encryptedSecret);
     return db.twoFactorSecret.upsert({
       where: { userId },
       create: {
         userId,
-        secret: encryptedSecret,
+        secret: secretBytes,
         confirmedAt: null,
         lastUsedStep: null,
       },
       update: {
-        secret: encryptedSecret,
+        secret: secretBytes,
         confirmedAt: null,
         lastUsedStep: null,
       },

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { test, expect } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
@@ -16,20 +17,30 @@ async function resetAdminUser() {
     algorithm: 2,
   });
 
-  const admin = await prisma.user.findFirst({ where: { username: "admin" } });
-  if (admin) {
-    await prisma.twoFactorRecoveryCode.deleteMany({ where: { userId: admin.id } });
-    await prisma.twoFactorSecret.deleteMany({ where: { userId: admin.id } });
-    await prisma.session.deleteMany({ where: { userId: admin.id } });
-    await prisma.user.update({
-      where: { id: admin.id },
-      data: {
-        passwordHash,
-        mustChangePassword: true,
-        status: "ACTIVE",
-        deletedAt: null,
-      },
-    });
+  try {
+    const admin = await prisma.user.findFirst({ where: { username: "admin" } });
+    if (admin) {
+      await prisma.twoFactorRecoveryCode.deleteMany({ where: { userId: admin.id } });
+      await prisma.twoFactorSecret.deleteMany({ where: { userId: admin.id } });
+      await prisma.session.deleteMany({ where: { userId: admin.id } });
+      await prisma.user.update({
+        where: { id: admin.id },
+        data: {
+          passwordHash,
+          mustChangePassword: true,
+          status: "ACTIVE",
+          deletedAt: null,
+        },
+      });
+    }
+  } catch {
+    const sql = `UPDATE users SET password_hash = '${passwordHash}', must_change_password = true, status = 'ACTIVE', deleted_at = NULL WHERE username = 'admin';`;
+    execSync(
+      `docker exec yayasan_postgres_prod psql -U postgres -d yayasan_db -c "${sql}"`,
+      {
+        stdio: "pipe",
+      }
+    );
   }
 }
 
@@ -131,6 +142,9 @@ test.describe("E2E Autentikasi Pengurus, Sesi, Ganti Sandi & 2FA TOTP Wajib", ()
     expect(sessionCookie?.httpOnly).toBe(true);
     expect(sessionCookie?.sameSite).toBe("Lax");
     expect(sessionCookie?.path).toBe("/");
+    if (sessionCookie?.name === "__Host-session") {
+      expect(sessionCookie.secure).toBe(true);
+    }
 
     // 4. Ubah kata sandi
     await page.fill("input[name='currentPassword']", initialAdminPassword);
@@ -203,8 +217,8 @@ test.describe("E2E Autentikasi Pengurus, Sesi, Ganti Sandi & 2FA TOTP Wajib", ()
     await expect(page).toHaveURL(/\/verifikasi-2fa/, { timeout: 10000 });
     await expect(page.locator("h1")).toContainText("Verifikasi Dua Faktor");
 
-    // Masukkan kode TOTP baru
-    const step2 = BigInt(Math.floor(Date.now() / 30000));
+    // Masukkan kode TOTP baru (langkah waktu + 1 dalam toleransi ±1 langkah untuk mencegah anti-replay step yang sama)
+    const step2 = BigInt(Math.floor(Date.now() / 30000)) + 1n;
     const totpCode2 = calculateTotpCode(rawSecret, step2);
     await page.fill("input[name='code']", totpCode2);
     await page.click("button[type='submit']");

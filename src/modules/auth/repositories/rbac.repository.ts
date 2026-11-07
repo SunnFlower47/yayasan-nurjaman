@@ -1,6 +1,7 @@
 /**
  * src/modules/auth/repositories/rbac.repository.ts
  * Akses basis data untuk peran (Role) dan izin (Permission) pengguna.
+ * Seluruh izin dievaluasi murni dari basis data tanpa bypass hardcode.
  */
 
 import { db } from "@/lib/db";
@@ -48,12 +49,6 @@ export class RbacRepository {
         },
       },
     });
-
-    const isSuperAdmin = userRoles.some((ur) => ur.role.code === "SUPER_ADMIN");
-    if (isSuperAdmin) {
-      const allPerms = await db.permission.findMany({ select: { code: true } });
-      return allPerms.map((p) => p.code);
-    }
 
     const permissionSet = new Set<string>();
     for (const ur of userRoles) {

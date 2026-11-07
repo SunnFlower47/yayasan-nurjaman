@@ -4,28 +4,35 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, History, KeyRound, Shield } from "lucide-react";
 import clsx from "clsx";
+import type { SystemPermissionCode } from "@/modules/auth";
 
 interface NavItem {
   name: string;
   href: string;
   icon: typeof LayoutDashboard;
+  permission?: SystemPermissionCode | undefined;
 }
 
 const navItems: NavItem[] = [
   { name: "Ringkasan", href: "/admin", icon: LayoutDashboard },
-  { name: "Jejak Audit", href: "/admin/audit", icon: History },
+  { name: "Jejak Audit", href: "/admin/audit", icon: History, permission: "audit.view" },
   { name: "Keamanan 2FA", href: "/admin/keamanan", icon: Shield },
   { name: "Ganti Sandi", href: "/ganti-password", icon: KeyRound },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ permissions = [] }: { permissions?: string[] }) {
   const pathname = usePathname();
+
+  const visibleNavItems = navItems.filter((item) => {
+    if (!item.permission) return true;
+    return permissions.includes(item.permission);
+  });
 
   return (
     <aside className="flex min-h-screen w-64 shrink-0 flex-col justify-between border-r border-stone-200 bg-white">
       <div>
         <div className="flex items-center gap-3 border-b border-stone-100 px-6 py-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-800 text-white shadow-sm">
+          <div className="shadow-xs flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-800 text-white">
             <Shield className="h-5 w-5" />
           </div>
           <div>
@@ -38,11 +45,11 @@ export function AdminSidebar() {
           </div>
         </div>
 
-        <nav className="space-y-1 p-4">
+        <nav aria-label="Navigasi Utama Panel" className="space-y-1 p-4">
           <p className="px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-stone-400">
             Menu Utama
           </p>
-          {navItems.map((item) => {
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
             return (

@@ -44,6 +44,7 @@ export {
   hasPermission,
   getUserPermissions,
   getUserRoles,
+  can,
 } from "./helpers/require-permission";
 export { normalizeIp, getClientIp } from "./helpers/ip";
 export { hashSessionToken, generateSessionToken } from "./helpers/token";

@@ -3,6 +3,13 @@
  * Definisi tipe data untuk jejak audit append-only yayasan.
  */
 
+import type { PrismaClient } from "@prisma/client";
+
+export type DbTransactionClient = Omit<
+  PrismaClient,
+  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
+>;
+
 export interface AuditLogInput {
   actorUserId?: string | null | undefined;
   action: string;
@@ -10,6 +17,10 @@ export interface AuditLogInput {
   entityId: string;
   before?: Record<string, unknown> | null | undefined;
   after?: Record<string, unknown> | null | undefined;
+  ip?: string | null | undefined;
+  userAgent?: string | null | undefined;
+  requestId?: string | null | undefined;
+  dbClient?: DbTransactionClient | undefined;
 }
 
 export interface AuditLogRecord {
@@ -21,6 +32,9 @@ export interface AuditLogRecord {
   entityId: string;
   before: unknown;
   after: unknown;
+  ip?: string | null | undefined;
+  userAgent?: string | null | undefined;
+  requestId?: string | null | undefined;
   createdAt: Date;
 }
 

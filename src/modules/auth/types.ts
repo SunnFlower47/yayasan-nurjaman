@@ -56,6 +56,7 @@ export interface ChangePasswordInput {
   confirmPassword: string;
   userIp?: string | undefined;
   userAgent?: string | undefined;
+  requestId?: string | undefined;
 }
 
 export interface ChangePasswordResult {
