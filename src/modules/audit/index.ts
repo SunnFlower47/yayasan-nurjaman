@@ -9,6 +9,13 @@ export type {
   AuditLogRecord,
   AuditLogQueryOptions,
   PaginatedAuditLogs,
+  DbTransactionClient,
 } from "./types";
 
-export { auditService, AuditService, writeAudit } from "./services/audit.service";
+export {
+  auditService,
+  AuditService,
+  writeAudit,
+  getAuditLogs,
+} from "./services/audit.service";
+export { redactSensitiveData } from "./helpers/redact";

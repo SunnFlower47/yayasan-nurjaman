@@ -47,6 +47,7 @@ export async function changePasswordAction(
   const { currentPassword, newPassword, confirmPassword } = parsed.data;
   const ip = getClientIp(reqHeaders);
   const userAgent = reqHeaders.get("user-agent") || undefined;
+  const requestId = reqHeaders.get("x-request-id") || undefined;
 
   // 4. Eksekusi ganti kata sandi
   const result = await authService.changePassword({
@@ -57,6 +58,7 @@ export async function changePasswordAction(
     confirmPassword,
     userIp: ip,
     userAgent,
+    requestId,
   });
 
   return result;

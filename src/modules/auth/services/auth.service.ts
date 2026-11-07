@@ -170,6 +170,9 @@ export class AuthService {
       entityId: user.id,
       before: { mustChangePassword: user.mustChangePassword },
       after: { mustChangePassword: false },
+      ip: input.userIp,
+      userAgent: input.userAgent,
+      requestId: input.requestId,
     });
 
     return { success: true };

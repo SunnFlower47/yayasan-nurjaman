@@ -8,6 +8,8 @@ export const metadata: Metadata = {
   description: "Portal masuk resmi untuk pengurus Yayasan Nurjaman Bongas Purwakarta.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default function MasukPage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-stone-50 px-4 py-12 sm:px-6 lg:px-8">

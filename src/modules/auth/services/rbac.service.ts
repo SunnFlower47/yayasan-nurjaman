@@ -1,6 +1,7 @@
 /**
  * src/modules/auth/services/rbac.service.ts
  * Layanan logika bisnis evaluasi peran dan izin (RBAC).
+ * Tidak ada bypass hardcode: Super Admin wajib memiliki izin resmi di basis data.
  */
 
 import { rbacRepository, type UserRoleRecord } from "../repositories/rbac.repository";
@@ -15,11 +16,6 @@ export class RbacService {
   }
 
   async hasPermission(userId: string, permissionCode: string): Promise<boolean> {
-    const roles = await rbacRepository.getUserRoles(userId);
-    if (roles.some((r) => r.code === "SUPER_ADMIN")) {
-      return true;
-    }
-
     const permissions = await rbacRepository.getUserPermissionCodes(userId);
     return permissions.includes(permissionCode);
   }

@@ -1,3 +1,4 @@
+import { execSync } from "node:child_process";
 import { test, expect } from "@playwright/test";
 import { PrismaClient } from "@prisma/client";
 import { hash } from "@node-rs/argon2";
@@ -14,18 +15,30 @@ async function resetAdminPassword() {
     algorithm: 2,
   });
 
-  await prisma.user.updateMany({
-    where: { username: "admin" },
-    data: {
-      passwordHash,
-      mustChangePassword: true,
-      status: "ACTIVE",
-      deletedAt: null,
-    },
-  });
+  try {
+    await prisma.user.updateMany({
+      where: { username: "admin" },
+      data: {
+        passwordHash,
+        mustChangePassword: true,
+        status: "ACTIVE",
+        deletedAt: null,
+      },
+    });
+  } catch {
+    const sql = `UPDATE users SET password_hash = '${passwordHash}', must_change_password = true, status = 'ACTIVE', deleted_at = NULL WHERE username = 'admin';`;
+    execSync(
+      `docker exec yayasan_postgres_prod psql -U postgres -d yayasan_db -c "${sql}"`,
+      {
+        stdio: "pipe",
+      }
+    );
+  }
 }
 
 test.describe("E2E Autentikasi Pengurus, Sesi & Ganti Sandi Wajib", () => {
+  test.describe.configure({ mode: "serial" });
+
   test.beforeEach(async () => {
     await resetAdminPassword();
   });
@@ -124,6 +137,9 @@ test.describe("E2E Autentikasi Pengurus, Sesi & Ganti Sandi Wajib", () => {
     expect(sessionCookie?.httpOnly).toBe(true);
     expect(sessionCookie?.sameSite).toBe("Lax");
     expect(sessionCookie?.path).toBe("/");
+    if (sessionCookie?.name === "__Host-session") {
+      expect(sessionCookie.secure).toBe(true);
+    }
 
     // 4. Isi formulir ganti kata sandi dengan kombinasi baru yang aman
     const newSecurePassword = "SandiBaru#2026@YayasanPurwakarta";

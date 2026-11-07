@@ -4,6 +4,7 @@
  */
 
 import { auditLogRepository } from "../repositories/audit-log.repository";
+import { redactSensitiveData } from "../helpers/redact";
 import type {
   AuditLogInput,
   AuditLogQueryOptions,
@@ -13,13 +14,24 @@ import type {
 
 export class AuditService {
   async writeAudit(data: AuditLogInput): Promise<AuditLogRecord> {
+    const redactedBefore = data.before
+      ? (redactSensitiveData(data.before) as Record<string, unknown>)
+      : null;
+    const redactedAfter = data.after
+      ? (redactSensitiveData(data.after) as Record<string, unknown>)
+      : null;
+
     const record = await auditLogRepository.create({
       actorUserId: data.actorUserId,
       action: data.action.trim(),
       entityType: data.entityType.trim(),
       entityId: data.entityId,
-      before: data.before,
-      after: data.after,
+      before: redactedBefore,
+      after: redactedAfter,
+      ip: data.ip,
+      userAgent: data.userAgent,
+      requestId: data.requestId,
+      dbClient: data.dbClient,
     });
 
     return {
@@ -31,6 +43,9 @@ export class AuditService {
       entityId: record.entityId ?? "",
       before: record.before,
       after: record.after,
+      ip: record.ip,
+      userAgent: record.userAgent,
+      requestId: record.requestId,
       createdAt: record.occurredAt,
     };
   }
@@ -47,6 +62,9 @@ export class AuditService {
       entityId: item.entityId ?? "",
       before: item.before,
       after: item.after,
+      ip: item.ip,
+      userAgent: item.userAgent,
+      requestId: item.requestId,
       createdAt: item.occurredAt,
     }));
 
@@ -61,10 +79,6 @@ export class AuditService {
 }
 
 export const auditService = new AuditService();
-
-/**
- * Helper langsung untuk mempermudah penulisan audit log di seluruh modul.
- */
-export async function writeAudit(data: AuditLogInput): Promise<AuditLogRecord> {
-  return auditService.writeAudit(data);
-}
+export const writeAudit = (data: AuditLogInput) => auditService.writeAudit(data);
+export const getAuditLogs = (options?: AuditLogQueryOptions) =>
+  auditService.getAuditLogs(options);

@@ -5,7 +5,7 @@
 # ==============================================================================
 
 FROM node:22-alpine AS base
-RUN corepack enable && corepack prepare pnpm@12.16.1 --activate
+RUN corepack enable && corepack prepare pnpm@12.18.0 --activate
 WORKDIR /app
 
 # ------------------------------------------------------------------------------
@@ -44,7 +44,10 @@ RUN pnpm build
 FROM base AS migrator
 COPY --from=deps /app/node_modules ./node_modules
 COPY prisma ./prisma
+COPY src ./src
+COPY tsconfig.json ./
 COPY package.json ./
+RUN ln -s ../migrations /app/prisma/schema/migrations
 ENV NODE_ENV=production
 CMD ["npx", "prisma", "migrate", "deploy"]
 
@@ -67,6 +70,7 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@node-rs ./node_modules/@node-rs
 
 USER nextjs
 

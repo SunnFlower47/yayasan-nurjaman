@@ -70,6 +70,8 @@ Dokumen ini memuat Architectural Decision Records (ADR) nomor 001 s.d. 010 untuk
 - **Opsi**: (1) Header bawaan Next.js standar, (2) Nonce-based CSP dinamis dengan strict HTTP response headers.
 - **Trade-off**: CSP statis `unsafe-inline` rentan XSS. Nonce-based CSP membutuhkan injeksi nonce per request pada SSR namun memberikan proteksi tingkat tertinggi.
 - **Rekomendasi Tegas**: Menerapkan **Nonce-based CSP, HSTS 2 Tahun (`max-age=63072000`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, dan `X-Robots-Tag: noindex, nofollow` pada rute admin/API**.
+- **Addendum (Fase 1c — Nonce CSP Dinamis pada Halaman Interaktif)**:
+  Halaman formulir interaktif Next.js yang membutuhkan hidrasi skrip (seperti `/masuk`, `/ganti-password`, `/admin`) wajib menggunakan rendering dinamis sisi server (`export const dynamic = "force-dynamic";`). Halaman yang di-prerender statis pada waktu build (`next build`) tidak dapat memperoleh nonce dinamis per-request dari middleware, yang menyebabkan browser memblokir skrip inline akibat ketidakcocokan nonce. Penerapan `force-dynamic` menjamin nonce acak selalu segar dan tersinkronisasi antara header CSP dan markup HTML respons.
 - **Status**: **DIPUTUSKAN**.
 
 ---

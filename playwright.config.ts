@@ -12,6 +12,7 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL,
+    ignoreHTTPSErrors: true,
     trace: "on-first-retry",
   },
   projects: [
@@ -23,10 +24,14 @@ export default defineConfig({
       },
     },
   ],
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000/api/health",
-    reuseExistingServer: !isCI,
-    timeout: 120 * 1000,
-  },
+  ...(!baseURL.startsWith("https://")
+    ? {
+        webServer: {
+          command: "pnpm dev",
+          url: "http://localhost:3000/api/health",
+          reuseExistingServer: !isCI,
+          timeout: 120 * 1000,
+        },
+      }
+    : {}),
 });

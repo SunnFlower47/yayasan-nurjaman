@@ -4,15 +4,20 @@
  * Wajib dijalankan di setiap Server Action, Route Handler, dan Page administratif.
  */
 
+import { cache } from "react";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { requireUser, type RequireUserOptions } from "./require-user";
 import { rbacService } from "../services/rbac.service";
+import { securityEventRepository } from "../repositories/security-event.repository";
+import { getClientIp } from "./ip";
 import { ForbiddenError } from "@/lib/errors";
+import type { SystemPermissionCode } from "../permissions";
 import type { SessionWithUser } from "../repositories/session.repository";
 import type { UserRoleRecord } from "../repositories/rbac.repository";
 
 export interface RequirePermissionOptions extends RequireUserOptions {
-  redirectOnForbidden?: string | boolean;
+  redirectOnForbidden?: string | boolean | undefined;
 }
 
 export interface PermissionContext {
@@ -21,19 +26,54 @@ export interface PermissionContext {
   permissions: string[];
 }
 
+export const getCachedUserPermissions = cache(
+  async (userId: string): Promise<string[]> => {
+    return rbacService.getUserPermissions(userId);
+  }
+);
+
+export const getCachedUserRoles = cache(
+  async (userId: string): Promise<UserRoleRecord[]> => {
+    return rbacService.getUserRoles(userId);
+  }
+);
+
+async function recordPermissionDenied(
+  userId: string,
+  permissionCode: SystemPermissionCode
+): Promise<void> {
+  try {
+    const reqHeaders = await headers();
+    const ip = getClientIp(reqHeaders);
+    const userAgent = reqHeaders.get("user-agent") ?? undefined;
+    await securityEventRepository.record("PERMISSION_DENIED", {
+      userId,
+      ip,
+      userAgent,
+      details: { permission: permissionCode },
+    });
+  } catch {
+    // Abaikan jika headers() tidak tersedia di lingkungan unit test
+  }
+}
+
 /**
  * Memastikan pengguna memiliki sesi aktif dan memiliki izin spesifik.
  * Melempar ForbiddenError (403) atau mengalihkan jika izin tidak mencukupi.
  */
 export async function requirePermission(
-  permissionCode: string,
+  permissionCode: SystemPermissionCode,
   options: RequirePermissionOptions = {}
 ): Promise<PermissionContext> {
   const sessionWithUser = await requireUser(options);
   const userId = sessionWithUser.user.id;
 
-  const allowed = await rbacService.hasPermission(userId, permissionCode);
+  const permissions = await getCachedUserPermissions(userId);
+  const allowed = permissions.includes(permissionCode);
+
   if (!allowed) {
+    await recordPermissionDenied(userId, permissionCode);
+
     if (options.redirectOnForbidden) {
       const target =
         typeof options.redirectOnForbidden === "string"
@@ -46,25 +86,31 @@ export async function requirePermission(
     );
   }
 
-  const [roles, permissions] = await Promise.all([
-    rbacService.getUserRoles(userId),
-    rbacService.getUserPermissions(userId),
-  ]);
-
+  const roles = await getCachedUserRoles(userId);
   return { sessionWithUser, roles, permissions };
+}
+
+export function can(
+  subject: { permissions?: string[] } | string[] | null | undefined,
+  permissionCode: SystemPermissionCode
+): boolean {
+  if (!subject) return false;
+  const list = Array.isArray(subject) ? subject : (subject.permissions ?? []);
+  return list.includes(permissionCode);
 }
 
 export async function hasPermission(
   userId: string,
   permissionCode: string
 ): Promise<boolean> {
-  return rbacService.hasPermission(userId, permissionCode);
+  const perms = await getCachedUserPermissions(userId);
+  return perms.includes(permissionCode);
 }
 
 export async function getUserPermissions(userId: string): Promise<string[]> {
-  return rbacService.getUserPermissions(userId);
+  return getCachedUserPermissions(userId);
 }
 
 export async function getUserRoles(userId: string): Promise<UserRoleRecord[]> {
-  return rbacService.getUserRoles(userId);
+  return getCachedUserRoles(userId);
 }
