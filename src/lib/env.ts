@@ -60,15 +60,24 @@ export const envSchema = z
   .object({
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
     PORT: z.coerce.number().default(3000),
-    NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3000"),
-    NEXT_PUBLIC_APP_NAME: z.string().min(1).default("Yayasan Nurjaman Bongas Purwakarta"),
-    DATABASE_URL: z.string().min(1, "DATABASE_URL wajib diisi untuk koneksi PostgreSQL"),
+    NEXT_PUBLIC_APP_URL: z.string().url().max(2048).default("http://localhost:3000"),
+    NEXT_PUBLIC_APP_NAME: z
+      .string()
+      .min(1)
+      .max(256)
+      .default("Yayasan Nurjaman Bongas Purwakarta"),
+    DATABASE_URL: z
+      .string()
+      .min(1, "DATABASE_URL wajib diisi untuk koneksi PostgreSQL")
+      .max(2048),
     ENCRYPTION_KEY_ACTIVE_ID: z
       .string()
-      .min(1, "ENCRYPTION_KEY_ACTIVE_ID wajib diisi untuk enkripsi kolom"),
+      .min(1, "ENCRYPTION_KEY_ACTIVE_ID wajib diisi untuk enkripsi kolom")
+      .max(64),
     ENCRYPTION_KEYS: z
       .string()
-      .min(1, "ENCRYPTION_KEYS wajib diisi untuk enkripsi kolom"),
+      .min(1, "ENCRYPTION_KEYS wajib diisi untuk enkripsi kolom")
+      .max(8192),
   })
   .superRefine(validateKeyRing);
 

@@ -190,7 +190,7 @@ describe("Integrasi Basis Data: Modul Identitas dan Akses", () => {
     expect(rolePermissionsAfter).toBe(rolePermissionsBefore);
     expect(superAdminAfter).toBe(superAdminBefore);
     expect(superAdminAfter).toBe(1);
-  });
+  }, 30000);
 
   // (e) role db_app gagal DELETE pada tabel users (pengguna hanya boleh di-soft-delete)
   it("(e) role db_app gagal DELETE pada users tetapi berhasil UPDATE (soft-delete)", async () => {

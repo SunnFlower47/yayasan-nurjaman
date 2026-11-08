@@ -11,8 +11,11 @@ export const loginSchema = z.object({
     .trim()
     .min(1, "Username wajib diisi")
     .max(32, "Username maksimal 32 karakter"),
-  password: z.string().min(1, "Password wajib diisi"),
-  next: z.string().optional(),
+  password: z
+    .string()
+    .min(1, "Password wajib diisi")
+    .max(128, "Password maksimal 128 karakter"),
+  next: z.string().max(2048, "URL tujuan maksimal 2048 karakter").optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

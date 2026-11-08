@@ -8,7 +8,13 @@ import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "../constants";
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Kata sandi saat ini wajib diisi"),
+    currentPassword: z
+      .string()
+      .min(1, "Kata sandi saat ini wajib diisi")
+      .max(
+        PASSWORD_MAX_LENGTH,
+        `Kata sandi saat ini maksimal ${PASSWORD_MAX_LENGTH} karakter`
+      ),
     newPassword: z
       .string()
       .min(
@@ -19,7 +25,13 @@ export const changePasswordSchema = z
         PASSWORD_MAX_LENGTH,
         `Kata sandi baru maksimal ${PASSWORD_MAX_LENGTH} karakter`
       ),
-    confirmPassword: z.string().min(1, "Konfirmasi kata sandi wajib diisi"),
+    confirmPassword: z
+      .string()
+      .min(1, "Konfirmasi kata sandi wajib diisi")
+      .max(
+        PASSWORD_MAX_LENGTH,
+        `Konfirmasi kata sandi maksimal ${PASSWORD_MAX_LENGTH} karakter`
+      ),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
     message: "Konfirmasi kata sandi baru tidak sesuai",
